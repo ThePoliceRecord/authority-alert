@@ -15,6 +15,7 @@ Last updated: YYYY-MM-DD
 2. **System Tiles** (responsive grid)
    - *Camera*: sensor status, resolution, FPS, recording state.
    - *Network*: AP/STA state, IPs, Wi-Fi signal strength, OTA server connectivity.
+   - *Remote Access*: tunnel status (disabled/connecting/connected), relay server info, last handshake (only shown if feature enabled).
    - *Storage*: usage on rootfs A/B, `/userdata`, SD card.
    - *Services*: Node-RED, Mosquitto, Supervisor, OTA agent (running? restart controls?).
    - *Alerts*: last OTA result, CVE status (from version audit), error events.
@@ -77,4 +78,4 @@ Last updated: YYYY-MM-DD
 - Multi-camera view with quick switching if hardware supports it.
 - Night/day theme toggle.
 - User roles (viewer vs admin) with limited controls.
-
+- Remote access diagnostics view (debug tunnel setup, show recommended actions).

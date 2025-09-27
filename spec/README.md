@@ -24,6 +24,7 @@ Last updated: YYYY-MM-DD
 - [NODERED_UI.md](./NODERED_UI.md) – Node-RED runtime config and customizations.
 - [NODERED_NODES.md](./NODERED_NODES.md) – inventory of Node-RED nodes and integration additions.
 - [POLICE_RECORD_INTEGRATION.md](./POLICE_RECORD_INTEGRATION.md) – workflow for connecting with Police Record system (Auth0/Keycloak, submissions, admin tasks).
+- [REMOTE_ACCESS_STRATEGY.md](./REMOTE_ACCESS_STRATEGY.md) – secure remote connectivity plan (self-hosted hole punching).
 
 ## Security, Privacy & Compliance
 - [PRIVACY_AND_REMOTE_ACCESS.md](./PRIVACY_AND_REMOTE_ACCESS.md) – opt-in rules for remote features.

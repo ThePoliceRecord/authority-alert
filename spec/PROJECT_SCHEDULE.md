@@ -38,11 +38,11 @@ Assumptions:
 - Day 24: Admin features (user list, face download) with role checks.
 - Day 25: UI forms + error handling; ensure opt-in controls respected.
 
-## Week 6 – Streaming Migration & Node-RED Hardening
+## Week 6 – Streaming Migration, Remote Access Prototype & Node-RED Hardening
 - Day 26–27: Replace Live555 with MediaMTX (build/package, init script, config).
 - Day 28: Update preview component to use MediaMTX streams (HLS/WebRTC).
-- Day 29: Audit Node-RED flows, disable legacy dashboard, lock palette manager.
-- Day 30: Implement version audit integration in pipeline; update `spec/VERSIONS.md` runtime snapshot.
+- Day 29: Prototype self-hosted secure remote connectivity (WireGuard/headscale) per `REMOTE_ACCESS_STRATEGY.md`.
+- Day 30: Audit Node-RED flows, disable legacy dashboard, lock palette manager; document remote access findings.
 
 ## Week 7 – Security, Backups, Logging
 - Day 31–32: Automate hardening steps (scripts/tooling per `SECURITY_HARDENING.md`).

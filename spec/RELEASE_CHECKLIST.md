@@ -27,6 +27,7 @@ Last updated: YYYY-MM-DD
 - [ ] Remote upload feature respects consent (off by default, prompts when enabled).
 - [ ] Node-RED editor disabled unless intentionally enabled.
 - [ ] Police Record integration: OAuth2 login/refresh (Auth0/Keycloak), profile update, officer submission form, admin download (if applicable).
+- [ ] Secure remote connectivity (if enabled): tunnel setup, consent prompt, connection test via self-hosted relay.
 
 ## Security & Privacy
 - [ ] Run `spec/version_audit.sh` on device; compare to baseline to ensure components updated.

@@ -40,6 +40,7 @@ Last updated: YYYY-MM-DD
 5. **Review & Confirm**
    - Show summary of choices (privacy toggles, network, security).
    - “Finish setup” button; triggers configuration save, restarts relevant services.
+    - Optional section for remote connectivity: prompt to configure self-hosted relay now or skip for later.
 
 6. **Completion Screen**
    - Message: “Setup complete. Authority Alert AI is on your side. You can change any setting anytime.”

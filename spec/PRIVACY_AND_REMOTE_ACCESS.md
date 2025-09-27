@@ -34,6 +34,10 @@ Last updated: YYYY-MM-DD
 3. **Remote Support / Diagnostics** (optional future feature)
    - Allow user to enable remote support session, generating temporary access token for support team.
    - Disabled by default.
+4. **Secure Remote Connectivity (self-hosted)**
+   - Optional WireGuard/WebRTC-based tunnel (see `spec/REMOTE_ACCESS_STRATEGY.md`).
+   - Requires user-provided relay/coordination server; feature disabled until user supplies details and consents.
+   - Show clear warning: enabling remote access exposes device to external networks—review hardening guide before activating.
 
 ## Configuration Storage
 - Store user choices in `/userdata/config/system.json` (example). Snapshot during backup/OTA.
