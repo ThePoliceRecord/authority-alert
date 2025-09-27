@@ -4,11 +4,11 @@ Owner: YOU
 Last updated: YYYY-MM-DD
 
 ## Device Overview
-- Model: Authority Alert (based on Seeed reCamera platform, CV181x SoC).
+- Model: Authority Alert (based on Seeed reCamera 200x series platform, CV181x SoC). Using 64 GB eMMC SKU by default.
 - CPU: C906B (RISC-V), TPU up to 700 MHz.
-- Memory: 256 MB DDR; Storage: 8 GB eMMC + optional SD.
+- Memory: 256 MB DDR; Storage: 64 GB eMMC (base firmware previously 8 GB, upgraded for Authority Alert) with optional SD for recovery.
 - Connectivity: Wi-Fi (AP/STA), Ethernet, USB-NCM, CAN bus, Bluetooth.
-- Sensors: camera module (ov5647/sc530ai detection).
+- Sensors: camera module (ov5647/sc530ai detection). Additional sensor boards (RGB clarity-optimized, EVS, IR) available.
 
 ## Power & Environment
 - Power input: 5V via USB-C (confirm final spec) or PoE module (if installed).
@@ -20,6 +20,7 @@ Last updated: YYYY-MM-DD
   - USB-C (data/power) – default enumerates as NCM for configuration.
   - MicroSD (for recovery images).
   - GPIO headers for CAN/serial (see device tree `sg2002_recamera_emmc.dts`).
+  - Base board options: CAN (upcoming), PoE (EVT), USB-C expansion (upcoming).
 - Status LEDs: red/blue/white (configured via `dts`). Document meaning (boot, recording, AP mode).
 
 ## Default Network Behavior
@@ -46,5 +47,6 @@ Last updated: YYYY-MM-DD
 - Reset button (if available) triggers factory reset (see `rootfs_overlay.sh` GPIO 510 check).
 
 ## Accessories
+- Base board: CAN (upcoming), PoE (EVT), USB-C expansion (upcoming) to extend IO.
+- Sensor boards: RGB clarity-optimized (EVT), EVS (upcoming), IR (upcoming); choose per deployment requirements.
 - Suggested: weatherproof enclosure, PoE injector (if using PoE module), secure mounting hardware, optional external storage.
-

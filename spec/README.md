@@ -7,6 +7,7 @@ Last updated: YYYY-MM-DD
 - [CUSTOMIZATION_AND_OTA.md](./CUSTOMIZATION_AND_OTA.md) – how the firmware is organized and how OTA updates work.
 - [BOOT_AND_STARTUP.md](./BOOT_AND_STARTUP.md) – boot sequence, init scripts, and service order.
 - [PACKAGES_ON_DEVICE.md](./PACKAGES_ON_DEVICE.md) – major packages/services included on the device.
+- [PRODUCT_FEATURES.md](./PRODUCT_FEATURES.md) – high-level product feature summary and accessory matrix.
 - `VOLUMES.md` *(if added later)* – storage/partition notes.
 
 ## Build, OTA & Automation
