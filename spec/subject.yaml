@@ -1,0 +1,724 @@
+openapi: 3.0.0
+info:
+  version: '0.1'
+  title: Subject Management
+  description: ' this handles all the data about officers and departments '
+paths:
+  /api/departments/{department_id}/:
+    get:
+      tags:
+        - Departments
+      security:
+      - Firebase: []
+      - DjangoSession: []
+      summary: Get a specific Department
+      parameters:
+      - name: department_id
+        in: path
+        required: true
+        description: The ID of the department to retrieve
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: Department details
+          content:
+            text/html:
+              schema:
+                type: string
+                
+        '404':
+          description: Department not found
+          content:
+            text/html:
+              schema:
+                type: string
+  /api/officer_list/:
+    get:
+      tags:
+        - Officers
+      security:
+        - Firebase: []
+      responses:
+        '200':
+          description: Officer List
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Officer'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/officer/{officer_id}:
+    get:
+      tags:
+        - Officers
+      security:
+        - Firebase: []
+      summary: Get a sepecific officer by id
+      parameters:
+      - name: officer_id
+        in: path
+        required: true
+        description: The id of the officer you want to look up
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: Officer Details
+          content:
+            application/json:
+              schema:
+                $ref:  '#/components/schemas/Officer'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/department/{department_id}:
+    get:
+      summary: This gets the Department by id
+      parameters:
+        - name: department_id
+          in:  path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            
+      tags:
+        - Departments
+      security:
+        - Firebase: []
+      responses:
+        '200':
+          description: Successful return of the department
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+        '401':
+          description: Unauthourized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/department_list/{state_code}:
+    get:
+      tags:
+        - Departments
+      summary: This returns a list of departments for the state
+      security:
+        - Firebase: []
+      parameters:
+        - name: state_code
+          in: path
+          required: true
+          description: This is the two letter state abbreveation
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Department list
+          content:
+            application/josn:
+              schema:
+                $ref: '#/components/schemas/Department'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/department_list/:
+    get:
+      tags:
+        - Departments
+      summary: This returns a list of all departments
+      security:
+        - Firebase: []
+      responses:
+        '200':
+          description: Department list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/officerbydepartment/{department_id}/:
+    get:
+      tags:
+        - Officers
+      summary: This returns a list of officers by department
+      security:
+        - Firebase: []
+      parameters:
+        - name: department_id
+          in: path
+          required: true
+          description: This is the id of the department
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Officer list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Officer'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/officerD/{officer_id}:
+    get:
+      tags:
+        - Officers
+      summary: This returns an Officers Details by id
+      security:
+        - DjangoSession: []
+      parameters:
+        - name: officer_id
+          in: path
+          required: true
+          description: This is the id of the officer
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Officer Details
+          content:
+            text/html:
+              schema:
+                type: string
+        '401':
+          description: Unauthorized
+          content:
+            text/html:
+              schema:
+                type: string
+        '404':
+          description: Not Found
+          content:
+            text/html:
+              schema:
+                type: string
+  /api/search/department/{department_id}/:
+    get:
+      tags:
+        - Officers
+        - Administrators
+      summary: This runs a search on the department with SerpApi and saves the results in the database
+      security:
+        - DjangoSession: []
+      parameters:
+        - name: department_id
+          in: path
+          required: true
+          description: This is the id of the department
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Search Results
+          content:
+            text/html:
+              schema:
+                type: string
+        '401':
+          description: Unauthorized
+          content:
+            text/html:
+              schema:
+                type: string
+        '404':
+          description: Not Found
+          content:
+            text/html:
+              schema:
+                type: string
+        '500':
+          description: Internal Server Error
+          content:
+            text/html:
+              schema:
+                type: string
+  /v1/departments/{state_code}:
+    get:
+      tags:
+        - Departments
+      summary: This returns a list of departments for the state
+      security:
+        - DjangoSession: []
+      parameters:
+        - name: state_code
+          in: path
+          required: true
+          description: This is the two letter state abbreveation
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Department list
+          content:
+            application/josn:
+              schema:
+                $ref: '#/components/schemas/Department'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/usage/v1/:
+    get:
+      tags:
+        - Administrators
+      summary: This returns the usage data for the SerpApi
+      security:
+        - DjangoSession: []
+      responses:
+        '200':
+          description: Usage Data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SerpUsage'
+        '401':
+          description: Unauthorized
+          content:
+            text/html:
+              schema:
+                type: string
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/departments/v2/:
+    get:
+      tags:
+        - Departments
+      summary: This returns a list of cards with only a subset of data for each department
+      security:
+        - DjangoSession: []
+      responses:
+        '200':
+          description: Department list
+          content:
+            text/html:
+              schema:
+                type: string
+        '401':
+          description: Unauthorized
+          content:
+            text/html:
+              schema:
+                type: string
+  /api/departments/v3/{query}/:
+    get:
+      tags:
+        - Departments
+      summary: This returns a list of cards with only a subset of data for each department
+      security:
+        - DjangoSession: []
+      parameters:
+        - name: query
+          in: path
+          required: true
+          description: This is the query string
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Department Card list
+          content:
+            text/html:
+              schema:
+                type: string
+        '401':
+          description: Unauthorized
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /api/identity/v1/{state}/:
+    post:
+      security:
+        - Firebase: []
+      tags:
+        - Officers
+      summary: This returns a list of officers that match the image sent in the request
+      parameters:
+        - name: state
+          in: path
+          required: true
+          description: This is the state code
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Officer List
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Officer'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+             schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+              application/json:
+                 schema:
+                  $ref: '#/components/schemas/Error'
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/identity/v2/{officer_id}/:
+    post:
+      tags:
+        - Officers
+      summary: This confirms the identity of the officer in the image
+      security:
+        - Firebase: []
+      parameters:
+        - name: officer_id
+          in: path
+          required: true
+          description: This is the officer id
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Success Message
+          content:
+            application/json:
+              schema:
+               $ref: '#/components/schemas/Message'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                
+servers:
+  - url: https://thepolicerecord.com
+    description: thepolicerecord.com main server
+components:
+  securitySchemes:
+    Firebase:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    DjangoSession:
+      type: apiKey
+      in: cookie
+      name: sessionid
+  schemas:
+    Department:
+      type: object
+      properties:
+        department_id:
+            type: integer
+            format: int64
+        ori:
+            type: string
+        total_number_employees:
+            type: integer
+            format: int64
+        number_classified_employees:
+            type: integer
+            format: int64
+        agency_name:
+            type: string
+        agency_type:
+            type: string
+        location_name:
+            type: string
+        state:
+            type: string
+        longitude:
+            type: number
+            format: float
+        latitude:
+            type: number
+            format: float
+        address:
+            type: string
+        city:
+            type: string
+        zip_code:
+            type: string
+        country:
+            type: string
+        phone:
+            type: string
+        website:
+            type: string
+        search_json:
+          type: string
+  
+    Officer:
+      type: object
+      properties:
+        officer_id:
+            type: integer
+            format: int64
+        date_created:
+            type: string
+            format: date-time
+        date_last_modified:
+            type: string
+            format: date-time
+        badge_number:
+            type: string
+        first_name:
+            type: string
+        middle_name:
+            type: string
+        last_name:
+            type: string
+        current_rank:
+            type: string
+        current_department_id:
+            type: integer
+            format: int64
+        gender:
+            type: string
+        race:
+            type: string
+        age:
+            type: integer
+            format: int64
+        profile_picture:
+            type: string
+        photo_url:
+            type: string
+        is_undercover:
+            type: boolean
+        notes:
+            type: string
+    
+    Vehicle:
+      type: object
+      properties:
+          vehicle_id:
+            type: integer
+            format: int64
+          department:
+            type: integer
+            format: int64
+          make:
+            type: string
+          model:
+            type: string
+          license_plate:
+            type: string
+          year:
+            type: integer
+            format: int64
+          color:
+            type: string
+          vin:
+            type: string
+          car_number:
+            type: string
+    Station:
+      type: object
+      properties:
+        station_id:
+            type: integer
+            format: int64
+        department:
+            type: integer
+            format: int64
+        name:
+            type: string
+        address:
+            type: string
+        city:
+            type: string
+        zip_code:
+            type: string
+        phone:
+            type: string
+        website:
+            type: string
+        longitude:
+            type: number
+            format: float
+        latitude:
+            type: number
+            format: float
+    Photo:
+      type: object
+      properties:
+        photo_id:
+            type: integer
+            format: int64
+        officer:
+            type: integer
+            format: int64
+        photo_url:
+            type: string
+        description:
+            type: string
+    Embedding:
+      type: object
+      properties:
+        embedding_id:
+            type: integer
+            format: int64
+        officer:
+            type: integer
+            format: int64
+        officer_name:
+            type: string
+        image_url:
+            type: string
+        embedding:
+            type: string
+        state:
+            type: string
+        location_code:
+            type: string 
+            
+    Error:
+      type: object
+      properties:
+        status_code:
+          type: integer
+          format: int64
+        message:
+          type: string
+    Message:
+      type: object
+      properties:
+        message:
+          type: string
+
+    SerpUsage:
+      type: object
+      properties:
+        account_status:
+          type: string
+        plan_id:
+          type: string
+        plan_name:
+          type: string
+        plan_monthly_price:
+          type: integer
+          format: float
+        searches_per_month:
+          type: integer
+          format: int64
+        plan_searches_left:
+          type: integer
+          format: int64
+        extra_credits:
+          type: integer
+          format: int64
+        total_searches_left:
+          type: integer
+          format: int64
+        this_month_usage:
+          type: integer
+          format: int64
+        this_hour_searches:
+          type: integer
+          format: int64
+        last_hour_searches:
+          type: integer
+          format: int64
+        account_rate_limit_per_hour:
+          type: integer
+          format: int64
+        
+tags:
+  - name: Officers
+    description: All operations concerning Officers
+  - name: Departments
+    description: All operations concerning Departments
+  - name: Administrators
+    description: All operations that only administrators can do

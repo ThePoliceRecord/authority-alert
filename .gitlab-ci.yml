@@ -1,0 +1,97 @@
+stages:
+  - prepare
+  - build
+  - audit
+  - package
+  - publish
+
+variables:
+  TARGET: "sg2002_recamera_emmc"
+  DOCKER_DRIVER: overlay2
+  GIT_SUBMODULE_STRATEGY: recursive
+
+default:
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - apk add --no-cache bash git make python3 py3-pip coreutils
+    - git config --global --add safe.directory "$CI_PROJECT_DIR"
+
+prepare:
+  stage: prepare
+  script:
+    - git submodule update --init --recursive --depth 1
+  artifacts:
+    expire_in: 2 hrs
+    paths:
+      - scripts/
+
+build:
+  stage: build
+  script:
+    - chmod +x docker_build.sh
+    - ./docker_build.sh "$TARGET"
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - output/
+      - buildroot-2021.05/output/
+  needs: [prepare]
+
+version_audit:
+  stage: audit
+  image: alpine:3.20
+  script:
+    - apk add --no-cache bash coreutils
+    - cp spec/version_audit.sh /tmp/version_audit.sh
+    - chmod +x /tmp/version_audit.sh
+    - OUTPUT_FILE=/tmp/version_audit.txt /tmp/version_audit.sh || true
+    - cat /tmp/version_audit.txt
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - /tmp/version_audit.txt
+  needs: [build]
+
+package:
+  stage: package
+  image: alpine:3.20
+  script:
+    - apk add --no-cache bash coreutils findutils
+    - mkdir -p ota_release/releases/${OTA_VERSION:-devel}
+    - find output/${TARGET}/install/soc_${TARGET} -maxdepth 1 -name '*_ota.zip' -print -exec cp {} ota_release/releases/${OTA_VERSION:-devel}/ \;
+    - (
+        cd ota_release/releases/${OTA_VERSION:-devel} &&
+        md5sum *.zip > sg2002_recamera_emmc_md5sum.txt
+      )
+    - ls -R ota_release
+  artifacts:
+    expire_in: 4 weeks
+    paths:
+      - ota_release/
+  needs: [build]
+
+publish:
+  stage: publish
+  image: alpine:3.20
+  rules:
+    - if: "$OTA_PUBLISH == \"true\""
+      when: on_success
+    - when: manual
+  script:
+    - apk add --no-cache curl openssh-client
+    - echo "Publishing OTA artifacts"
+    - |
+      if [ -n "$OTA_SERVER_HOST" ]; then
+        for f in ota_release/releases/${OTA_VERSION:-devel}/*; do
+          echo "Uploading $f"
+          curl -T "$f" "http://${OTA_SERVER_HOST}:${OTA_SERVER_PORT:-8080}/releases/${OTA_VERSION:-devel}/"
+        done
+      else
+        echo "OTA_SERVER_HOST not set; skipping publish"
+      fi
+  needs: [package]
+  dependencies:
+    - package

@@ -1,0 +1,543 @@
+#OpenApi spec for the User Management API
+openapi: 3.0.0
+info:
+  title: The Police Record User Management API
+  description: The Police Record User Management API
+  termsOfService: https://thepolicerecord.com/terms/
+  contact:
+    name: The Police Record
+    url: https://thepolicerecord.com
+    email: info@thepolicerecord.com
+  version: '0.01.1'
+servers:
+  - url: https://thepolicerecord.com
+    description: The Police Record production server
+  - url: https://dev.thepolicerecord.com
+    description: The Police Record development server This is For Future Use :D
+tags:
+  - name: admin
+    description: Admin operations
+  - name: user
+    description: User operations
+  - name: website
+    description: Website pages
+  - name: investor
+    description: Investor pages
+components:
+  securitySchemes:
+    Firebase:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    DjangoSession:
+      type: apiKey
+      in: cookie
+      name: sessionid
+  responses:
+    UnauthorizedError:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorModel'
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorModel'
+    NotFoundError:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorModel'
+    UnauthorizedPage:
+      description: Unauthorized
+      content:
+        text/html:
+          schema:
+            type: string
+            format: binary
+    InternalServerPage:
+      description: Internal Server Error
+      content:
+        text/html:
+          schema:
+            type: string
+            format: binary
+    NotFoundPage:
+      description: Not Found
+      content:
+        text/html:
+          schema:
+            type: string
+            format: binary
+  schemas:
+    ErrorModel:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+    Message:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+    UserProfile:
+      type: object
+      required:
+        - user_id
+        - display_name
+        - email
+        - user_bio
+        - profile_pic_url
+        - points
+        - account_type
+        - is_on_mailing_list
+        - achievements
+        - strikes
+      properties:
+        user_id:
+          type: string
+        display_name:
+          type: string
+        email:
+          type: string
+        user_bio:
+          type: string
+        profile_pic_url:
+          type: string
+        points:
+          type: integer
+        account_type:
+          type: string
+        is_on_mailing_list:
+          type: boolean
+        achievements:
+          type: array
+          items:
+            type: string
+        strikes:
+          type: integer
+    UserSubmission:
+      type: object
+      required:
+        - user_id
+        - department_id
+        - last_name
+      properties:
+        user_id:
+            type: string
+        department_id:
+            type: string
+        last_name:
+            type: string
+        first_name:
+            type: string
+        middle_name:
+            type: string
+        current_rank:
+          type: string
+        badge_number:
+            type: string
+        gender:
+            type: string
+        race:
+            type: string
+        age:
+            type: integer
+        picture:
+            type: string
+            format: binary
+        is_undercover:
+            type: boolean
+        status:
+            type: string
+paths:
+  /:
+    get:
+      tags:
+        - website
+      summary: Get the Home Page
+      description: Get the Home Page
+      responses:
+        '200':
+          description: The Home Page
+          content:
+            text/html:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedPage'
+  /profile/:
+    post:
+      tags:
+        - user
+      security:
+        - Firebase: []
+        - DjangoSession: []
+      summary: Allows a user to update their profile
+      description: Allows a user to update their profile
+      requestBody:
+        description: The user profile to update
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+      responses:
+        '200':
+          description: The updated user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /submit/{department_id}/:
+    parameters:
+        - in: path
+          name: department_id
+          required: true
+          description: The id of the department to submit to
+          schema:
+            type: integer
+            format: int64
+    get:
+      tags:
+        - user
+        - website
+      security:
+        - Firebase: []
+        - DjangoSession: []
+      summary: Get the submission page for a department
+      description: Get the submission page for a department
+      
+      responses:
+        '200':
+          description: The submission page
+          content:
+            text/html:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedPage'
+        '404':
+          $ref: '#/components/responses/NotFoundPage'
+        '500':
+          $ref: '#/components/responses/InternalServerPage'
+    post:
+      tags:
+        - user
+        - website
+      security:
+        - Firebase: []
+        - DjangoSession: []
+      requestBody:
+        description: The user submission to submit
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserSubmission'
+            encoding:
+              picture:
+                contentType: image/png
+      responses:
+        '200':
+          description: The submission page
+          content:
+            text/html:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedPage'
+        '404':
+          $ref: '#/components/responses/NotFoundPage'
+        '500':
+          $ref: '#/components/responses/InternalServerPage'
+  /api/users/v1/:
+    get:
+      tags:
+        - admin
+      security:
+        - Firebase: []
+        - DjangoSession: []
+      summary: Get all users
+      description: Get all users
+      responses:
+        '200':
+          description: All users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /signup/:
+    post:
+      tags:
+        - user
+      summary: Sign up a new user with the firebase token
+      description: Sign up a new user with the firebase token
+      parameters:
+        - in: query
+          name: next
+          required: false
+          description: The page to redirect to after signup
+          schema:
+            type: string
+      requestBody:
+        description: The firebase token
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: a redirect to the dashboard or the page passed as next
+          content:
+            text/html:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /register/:
+    get:
+      tags:
+        - user
+        - website
+      summary: Get the registration page
+      description: Get the registration page
+      responses:
+        '200':
+          description: The registration page
+          content:
+            text/html:
+              schema:
+                type: string
+                format: binary
+        '500':
+          $ref: '#/components/responses/InternalServerPage'
+  /logout/:
+    get:
+      tags:
+        - user
+      summary: Log out the user
+      description: Log out the user
+      responses:
+        '200':
+          description: The home page
+          content:
+            text/html:
+              schema:
+                type: string
+                format: binary
+        '500':
+          $ref: '#/components/responses/InternalServerPage'
+        '405':
+          $ref: '#/components/responses/InternalServerPage'
+  /terms/:
+    get:
+      tags:
+        - website
+      summary: Get the terms of service page
+      description: Get the terms of service page
+      responses:
+        '200':
+          description: The terms of service page
+          content:
+            text/html:
+              schema:
+                type: string
+                format: binary
+        '500':
+          $ref: '#/components/responses/InternalServerPage'
+  /privacy/:
+    get:
+      tags:
+        - website
+      summary: Get the privacy policy page
+      description: Get the privacy policy page
+      responses:
+        '200':
+          description: The privacy policy page
+          content:
+            text/html:
+              schema:
+                type: string
+                format: binary
+        '500':
+          $ref: '#/components/responses/InternalServerPage'
+  /about/:
+    get:
+      tags:
+        - website
+      summary: Get the about page
+      description: Get the about page
+      responses:
+        '200':
+          description: The about page
+          content:
+            text/html:
+              schema:
+                type: string
+                format: binary
+        '500':
+          $ref: '#/components/responses/InternalServerPage'
+  /download/:
+    get:
+      tags:
+        - admin
+        - website
+      security:
+        - Firebase: []
+        - DjangoSession: []
+      summary: Download all the faces in the database in a zip file
+      description: Download all the faces in the database in a zip file
+      responses:
+        '200':
+          description: The zip file
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedPage'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /info:
+    get:
+      tags:
+        - website
+        - investor
+      security:
+        - Firebase: []
+        - DjangoSession: []
+      summary: Get the investor information page
+      description: Get the investor information page
+      responses:
+        '200':
+          description: The investor information page
+          content:
+            text/html:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedPage'
+        '500':
+          $ref: '#/components/responses/InternalServerPage'
+  /info/seed/:
+    get:
+      tags:
+        - website
+        - investor
+      security:
+        - Firebase: []
+        - DjangoSession: []
+      summary: The investor information page for the seed round
+      description: The investor information page for the seed round
+      responses:
+        '200':
+          description: The investor information page for the seed round
+          content:
+            text/html:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedPage'
+        '500':
+          $ref: '#/components/responses/InternalServerPage'
+  /info/terms/:
+    get:
+      tags:
+        - website
+        - investor
+      security:
+        - Firebase: []
+        - DjangoSession: []
+      summary: Get the seed round investment terms page
+      description: Get the seed round investment terms page
+      responses:
+        '200':
+          description: The seed round investment terms page
+          content:
+            text/html:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedPage'
+        '500':
+          $ref: '#/components/responses/InternalServerPage'
+  /info/faqs/:
+    get:
+      tags:
+        - website
+        - investor
+      security:
+        - Firebase: []
+        - DjangoSession: []
+      summary: Get the investor FAQ page
+      description: Get the investor FAQ page
+      responses:
+        '200':
+          description: The investor FAQ page
+          content:
+            text/html:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedPage'
+        '500':
+          $ref: '#/components/responses/InternalServerPage'
+  /info/financials/:
+    get:
+      tags:
+        - website
+        - investor
+      security:
+        - Firebase: []
+        - DjangoSession: []
+      summary: Get the financials projections page
+      description: Get the financials projections page
+      responses:
+        '200':
+          description: The financial projections page
+          content:
+            text/html:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedPage'
+        '500':
+          $ref: '#/components/responses/InternalServerPage'
+          

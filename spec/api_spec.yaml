@@ -1,0 +1,3420 @@
+openapi: "3.0.0"
+info:
+  title: The Police Record API Documentation
+  version: 1.0.0
+  description: API documentation for The Police Record application.
+  contact:
+    name: The Police Record
+    url: https://thepolicerecord.com
+    email: twhite@staff.thepolicerecord.com
+  
+tags:
+  - name: Departments
+    description: Operations related to departments
+  - name: Officers
+    description: Operations related to officers
+  - name: Reports
+    description: Operations related to reports
+  - name: Watchlist
+    description: Operations related to watchlists
+  - name: Submissions
+    description: Operations related to user submissions
+  - name: admin
+    description: Operations that require admin role
+  - name: analyst
+    description: Operations that require analyst role
+  - name: Subscriptions
+    description: Operations related to recurring subscriptions
+  - name: VersionInfo
+    description: Operations related to version information
+  - name: ProfileData
+    description: Operations related to user profile data
+  - name: CsrfToken
+    description: Operations related to CSRF tokens
+
+
+
+servers:
+  - url: http://localhost:8000
+    description: Local server
+  - url: https://dev.thepolicerecord.com
+    description: Development server
+  - url: https://thepolicerecord.com
+    description: Production server
+  
+  
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    ResponseWrapper:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Success"
+        data:
+          type: object
+          example: {"key": "value"}
+        error:
+          type: object
+          example: {"key": "value"}
+
+     
+    CsrfToken:
+      type: object
+      properties:
+        csrf_token:
+          type: string
+          example: "123456"
+  
+    VersionInfo:
+      type: object
+      properties:
+        android:
+          type: string
+          example: "1.0.0"
+        ios:
+          type: string
+          example: "1.0.0"
+        web:
+          type: string
+          example: "1.0.0"
+      additionalProperties: false
+    
+    UserProfile:
+      type: object
+      properties:
+        id : #primary key in postgres
+          type: integer
+          example: 1
+        flagged:
+          type: boolean
+          example: false
+        user_id:
+          type: integer
+          example: 1
+        first_name:
+          type: string
+          example: "John"
+        last_name:
+          type: string
+          example: "Doe"
+        profile_picture_url:
+          type: string
+          example: "https://example.com/photo.jpg"
+        user_bio:
+          type: string
+          example: "This is a bio."
+        created_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        updated_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        points:
+          type: integer
+          example: 0
+        account_type:
+          type: string
+          example: "User"
+        is_on_mailing_list:
+          type: boolean
+          example: true
+        achievements:
+          type: array
+          items:
+            type: object
+            $ref: '#/components/schemas/Achievement'
+          example:
+            - {"id": 1, "name": "Achievement Name", "description": "Achievement Description", "badge_url": "https://example.com/badge.jpg"}
+            - {"id": 2, "name": "Achievement Name", "description": "Achievement Description", "badge_url": "https://example.com/badge.jpg"}
+        strikes:
+          type: integer
+          example: 0
+        permissions:
+          type: object
+          example: {"key": "value"}
+        user_info:
+          type: object
+          example: {"key": "value"}
+        access_token:
+          type: string
+          example: "123456"
+        code:
+          type: string
+          example: "123456"
+        refresh_token:
+          type: string
+          example: "123456"
+        auth_state:
+          type: string
+          example: "123456"
+        id_token:
+          type: string
+          example: "123456"
+        sub: 
+          type: string
+          example: "123456"
+        account_balance:
+          type: number
+          example: 100.00
+        basic_report_subscriber:
+          type: boolean
+          example: true
+        advanced_report_subscriber:
+          type: boolean
+          example: true
+        non_expiring_basic_report_credits:
+          type: integer
+          example: 1
+        non_expiring_advanced_report_credits:
+          type: integer
+          example: 1
+        basic_report_credits:
+          type: integer
+          example: 1
+        advanced_report_credits:
+          type: integer
+          example: 1
+        unlimited_biometric_search_subscriber:
+          type: boolean
+          example: true
+        basic_biometric_search_subscriber:
+          type: boolean
+          example: true
+        advanced_biometric_search_subscriber:
+          type: boolean
+          example: true
+        daily_biometric_search_credits:
+          type: integer
+          example: 1
+        daily_biometric_reset_time:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        last_used_free_biometric_search:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        privacy_policy_accepted:
+          type: boolean
+          example: true
+        terms_of_service_accepted:
+          type: boolean
+          example: true
+        stripe_customer_id:
+          type: string
+          example: "123456"
+
+      
+    Achievement:
+      type: object
+      properties:
+        id: #primary key in postgres
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Achievement Name"
+        description:
+          type: string
+          example: "Achievement Description"
+        badge_url:
+          type: string
+          example: "https://example.com/badge.jpg"
+
+    OfficerSearchRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          example: "John"
+        last_name:
+          type: string
+          example: "Doe"
+        badge_number:
+          type: string
+          example: "123456"
+        department_name:
+          type: string
+          example: "Springfield Police Department"
+        state:
+          type: string
+          example: "CA"
+        city:
+          type: string
+          example: "Springfield"
+        image:
+          type: string #base64 encoded image
+          example: "base64encodedimage"
+        latitude:
+          type: number
+          example: 90.0000
+        longitude:
+          type: number
+          example: 90.0000
+        stream_id:
+          type: string
+          example: 123e4567-e89b-12d3-a456-426614174000
+          format: uuid
+        page:
+          type: integer
+          default: 1
+          example: 1
+        page_size:
+          type: integer
+          default: 10
+          example: 10
+      additionalProperties: false
+
+    DepartmentSearchRequest:
+      type: object
+      properties:
+        agency_name:
+          type: string
+          example: "Springfield Police Department"
+        state:
+          type: string
+          example: "CA"
+        city:
+          type: string
+          example: "Springfield"
+        zip_code:
+          type: string
+          example: "12345"
+        page:
+          type: integer
+          default: 1
+          example: 1
+        page_size:
+          type: integer
+          default: 10
+          example: 10
+      additionalProperties: false
+
+
+    RecurringPurchase:
+      type: object
+      properties: 
+        id:
+          type: integer
+          example: 1
+        stripe_id:
+          type: string
+          example: "123456" 
+        subscription_id:
+          type: string
+          example: "123456"
+        payment_intent_id:
+          type: string
+          example: "123456"
+        billing_reason:
+          type: string
+          example: "Reason"
+        invoice_url:
+          type: string
+          example: "https://example.com"
+        invoice_pdf_url:
+          type: string
+          example: "https://example.com"
+        product:
+          type: integer
+          example: 1
+        user:
+          type: integer
+          example: 1  
+        created_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        stripe_json:
+          type: object
+          example: {"key": "value"} 
+        account_credited_timestamp:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        sponsorship:
+          type: boolean
+          example: true
+        sponsorship_id:
+          type: integer
+          example: 1  
+        cancelled_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        next_billing_date:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z 
+        last_billing_date:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z 
+        last_payment_date:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z 
+        last_payment_amount:
+          type: number
+          example: 100.00
+        idempotency_key:  
+          type: string
+          example: "123456"  
+
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 403
+        message:
+          type: string
+          
+          example: "You do not have permission to perform this action."
+        data:
+          type: object
+          example: {"key": "value"}
+
+     
+    UserSubmission:
+      type: object
+      properties:
+        submission_id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        user_id:
+          type: integer
+          example: 1
+        submitted_at:
+          type: string
+          format: date-time
+          example: "2023-01-01T12:00:00Z"
+        badge_number:
+          type: string
+          example: 123456
+        may_work_at:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        first_name:
+          type: string
+          example: John
+        middle_name:
+          type: string
+          example: Doe
+        last_name:
+          type: string
+          example: Smith
+        current_rank:
+          type: string
+          enum:
+            - Officer
+            - Sergeant
+            - Lieutenant
+            - Captain
+            - Deputy Chief
+            - Chief
+            - Detective
+            - Corporal
+            - Agent
+            - Trooper
+            - Sheriff
+            - Marshal
+            - Constable
+            - Inspector
+            - Commissioner
+            - Superintendent
+            - Commander
+            - Assistant Chief
+          example: Officer
+        gender:
+          type: string
+          enum:
+            - Male
+            - Female
+            - Other
+          example: Male
+        race:
+          type: string
+          enum:
+            - Caucasian
+            - Asian
+            - African
+            - Hispanic
+            - Native American
+            - Pacific Islander
+            - Middle Eastern
+            - Other
+          example: Caucasian
+        age:
+          type: integer
+          example: 30
+        photos:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+
+        is_undercover:
+          type: boolean
+          example: false
+        notes:
+          type: string
+          example: "This is a note."
+        status:
+          type: string
+          example: "Pending"
+
+    SubmissionPhoto:
+      type: object
+      properties: 
+        photo_id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        url:
+          type: string
+          example: "https://example.com/photo.jpg"
+        submission:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+
+    Stream:
+      type: object
+      properties:
+        error_message:
+          type: string
+          example: "Error message"
+        error_time:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        type:
+          type: string
+          example: "Stream"
+        uuid:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        url:
+          type: string
+          example: "https://example.com/stream.m3u8"
+        codec_name:
+          type: string
+          example: "h264"
+        queue_time:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        start_time:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        user_id:
+          type: string
+          example: "1"
+        width:
+          type: integer
+          example: 1920
+        processing_time:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        state:
+          type: string
+          example: "Running"
+        height:
+          type: integer
+
+        officers:
+          type: array
+          items:
+            type: string
+            format: uuid
+          example:
+            - 123e4567-e89b-12d3-a456-426614174000
+            - 123e4567-e89b-12d3-a456-426614174001
+        department:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+
+        end_time:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        status:
+          type: string
+          example: "Pending"
+        mtx_id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        photos:
+          type: array
+          items:
+            type: object
+            $ref: '#/components/schemas/SubmissionPhoto'
+
+    Record:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        title:
+          type: string
+          example: "Title"
+        url:
+          type: string
+          example: "https://example.com"
+        website:
+          type: string
+          example: "Website"
+        content:
+          type: string
+          example: "Content"
+        record_type:
+          type: string
+          example: "Video"
+        post_quarantine_url:
+          type: string
+          example: "https://example.com"
+        created_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        discovered_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        last_accessed_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        object_detection:
+          type: array
+          items:
+            type: string
+          example:
+            - "Person"
+            - "Car"
+            - "Gun"
+        record_source:
+          type: string
+          example: "Web Upload"
+        sentiment_analysis:
+          type: array
+          items:
+            type: string
+          example:
+            - "Positive"
+            - "Negative"
+            - "Neutral"
+        from_official_source:
+          type: boolean
+        status:
+          type: string
+          example: "Pending"
+        known_officers:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        departments:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+
+    Report:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        match_id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        title:
+          type: string
+          example: "Title"
+        created_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        generated_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        last_viewed_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        subject_type:
+          type: string
+          example: "User"
+        subject_id:
+          type: string
+        departments:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        officers:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+
+        user_id:
+          type: string
+          example: "1"
+
+
+        sentiment_analysis:
+          type: array
+          items:
+            type: string
+          example:
+            - "Positive"
+            - "Negative"
+            - "Neutral"
+        report_type:
+          type: string
+          example: "Officer"
+        analysis:
+          type: array
+          items:
+            type: string
+          example:
+            - "Analysis"
+            - "Analysis"
+            - "Analysis"
+        status:
+          type: string
+          example: "Pending"
+        stage:
+          type: integer
+          example: 1
+
+        reviewed_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        notes:
+          type: string
+          example: "This is a note."
+
+    WebFile:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        file_type:
+          type: string
+          example: "Type"
+        file_name:
+          type: string
+          example: "Name"
+        quarantine_url:
+          type: string
+          example: "https://example.com"
+        created_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        modified_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        quarantine:
+          type: boolean
+          example: true
+        origin:
+          type: string
+          example: "https://example.com"
+        post_quarantine_url:
+          type: string
+          example: "https://example.com"
+
+    Waitlist:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        wait_list_name:
+          type: string
+          example: "Name"
+
+    Officer:
+      type: object
+      properties:
+        officer_id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        badge_number:
+          type: string
+          example: "123456"
+        first_name:
+          type: string
+          example: "John"
+        middle_name:
+          type: string
+          example: "Doe"
+        last_name:
+          type: string
+          example: "Smith"
+        current_rank:
+          type: string
+          enum:
+            - Officer
+            - Sergeant
+            - Lieutenant
+            - Captain
+            - Deputy Chief
+            - Chief
+            - Detective
+            - Corporal
+            - Agent
+            - Trooper
+            - Sheriff
+            - Marshal
+            - Constable
+            - Inspector
+            - Commissioner
+            - Superintendent
+            - Commander
+            - Assistant Chief
+          example: Officer
+        department:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        past_departments:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+
+        gender:
+          type: string
+          enum:
+            - Male
+            - Female
+            - Other
+          example: Male
+        race:
+          type: string
+          enum:
+            - Caucasian
+            - Asian
+            - African
+            - Hispanic
+            - Native American
+            - Pacific Islander
+            - Middle Eastern
+            - Other
+          example: Caucasian
+        age:
+          type: integer
+          example: 30
+        photo_url:
+          type: string
+          example: "https://example.com/photo.jpg"
+        search_json:
+          type: object
+
+          example: {"key": "value"}
+
+        notes:
+          type: string
+          example: "This is a note."
+
+        is_undercover:
+          type: boolean
+          example: false
+
+        updated_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+          
+        photos:
+          type: array
+          items:
+            type: string
+            format: uuid
+          example:
+            - 123e4567-e89b-12d3-a456-426614174000
+            - 123e4567-e89b-12d3-a456-426614174001
+
+    Department:
+      type: object
+      properties:
+        ori:
+          type: string
+          example: "123456"
+        total_number_employees:
+          type: integer
+          example: 100
+        number_classified_employees:
+          type: integer
+          example: 50
+        agency_name:
+          type: string
+          example: "Name"
+        agency_type:
+          type: string
+          example: "Police Department"
+        location_name:
+          type: string
+          example: "Cape Girardeau Police Department"
+        state:
+          type: string
+          example: "MO"
+        longitude:
+          type: number
+          example: 90.0000
+        latitude:
+          type: number
+          example: 90.0000
+        address:
+          type: string
+          example: "123 Main St."
+        city:
+          type: string
+          example: "Cape Girardeau"
+        zip_code:
+          type: string
+          example: "63701"
+        country:
+          type: string
+          example: "USA"
+        phone:
+          type: string
+          example: "123-456-7890"
+        officers:
+          type: array
+          items:
+            type: string
+            format: uuid
+          example:
+            - 123e4567-e89b-12d3-a456-426614174000
+            - 123e4567-e89b-12d3-a456-426614174001
+        search_json:
+          type: object
+          example: {"key": "value"}
+
+        department_id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        created_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        modified_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+
+    Photo:
+      type: object
+      properties:
+        photo_id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        officer:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        embedding:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        photo_url:
+          type: string
+          example: "https://example.com/photo.jpg"
+
+    Embedding:
+      type: object
+      properties:
+        embedding_id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        officer:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        photo:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        image_url:
+          type: string
+          example: "https://example.com/photo.jpg"
+        officer_name:
+          type: string
+          example: "John Doe"
+        state:
+          type: string
+          example: "MO"
+        location_code:
+          type: string
+          example: "123456"
+        embedding:
+          type: array
+          items:
+            type: number
+          example: [0.1, 0.2, 0.3]
+
+    OfficerWatchlist:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        is_active:
+          type: boolean
+          example: true
+        user_id:
+          type: integer
+          example: 1
+        officer_id:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        position:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        updated_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        removed_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        last_visited:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        last_found_new_data:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+
+    DepartmentWatchlist:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        is_active:
+          type: boolean
+          example: true
+        user_id:
+          type: integer
+          example: 1
+        department_id:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        position:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        updated_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        removed_at:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        last_visited:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+        last_found_new_data:
+          type: string
+          format: date-time
+          example: 2023-01-01T12:00:00Z
+    
+  examples:
+    error401:
+      value:
+        code: 401
+        message: Unauthorized
+        details: "Admin or Analyst role required."
+    error403:
+      value:
+        code: 403
+        message: Forbidden
+        details: "Admin or Analyst role required."
+    error404:
+      value:
+        code: 404
+        message: Not found
+        details: "Resource not found."
+security:
+  - BearerAuth: []
+
+paths:
+
+  /api/v1/csrf/:
+    get:
+      summary: Get a CSRF token
+      operationId: getCsrfToken
+      tags:
+        - CsrfToken
+      responses:
+        '200':
+          description: A CSRF token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CsrfToken'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+                  
+  /api/v1/departments/nearby/:
+    post:
+      summary: List all departments near a location
+      operationId: listDepartmentsNearby
+      tags:
+        - Departments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                latitude:
+                  type: number
+                  example: 90.0000
+                longitude:
+                  type: number
+                  example: 90.0000
+              required:
+                - latitude
+                - longitude
+      responses:
+        '200':
+          description: A JSON array of departments wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Department'
+                    required:
+                      - data
+        '403':
+          description: Forbidden Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: No departments found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error400:
+                  value:
+                    code: 400
+                    message: "Bad Request"
+                    details: "Invalid request."
+        
+
+  /api/v1/departments/:
+    get:
+      summary: List all departments
+      operationId: listDepartments
+      tags:
+        - Departments
+        - admin
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: A JSON array of departments wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Department'
+                    required:
+                      - data
+        '403':
+          description: Forbidden Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+        
+                   
+    post:
+      summary: Create a new department
+      operationId: createDepartment
+      description: Requires admin role
+      tags:
+        - Departments
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Department'
+      responses:
+        '201':
+          description: Department created successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Department'
+                    required:
+                      - data
+
+        '403':
+          description: Forbidden Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+        '409':
+          description: Department already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error409:
+                  value:
+                    code: 409
+                    message: "Conflict"
+                    data:
+                        $ref: '#/components/schemas/Department'
+
+  /api/v1/departments/{id}/:
+    get:
+      summary: Retrieve a department by ID
+      operationId: retrieveDepartment
+      tags:
+        - Departments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A department wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Department'
+                    required:
+                      - data
+        '404':
+          description: Department not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+          
+
+    put:
+      summary: Update a department by ID
+      operationId: updateDepartment
+      description: Requires admin role
+      tags:
+        - Departments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Department'
+      responses:
+        '200':
+          description: Department updated successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Department'
+                    required:
+                      - data
+        '404':
+          description: Department not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+        
+  /api/v1/departments/{id}/records/:
+    get:
+      summary: List all records in a department
+      operationId: listRecordsByDepartment
+      tags:
+        - Records
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A JSON array of records wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Record'
+                    required:
+                      - data
+        '404':
+          description: Department not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+    post:
+      summary: Create a new record for a department
+      operationId: createRecordByDepartment
+      tags:
+        - Records
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Record'
+      responses:
+        '201':
+          description: Record created successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Record'
+                    required:
+                      - data
+        '404':
+          description: Department not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+  
+  /api/v1/departments/{id}/officers/:
+    get:
+      summary: List all officers in a department
+      operationId: listOfficersByDepartment
+      tags:
+        - Officers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A JSON array of officers wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Officer'
+                    required:
+                      - data
+        '404':
+          description: Department not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+        
+  
+  /api/v1/departments/{id}/report/:
+    get:
+      summary: Get a report for a department if the user has generated one
+      operationId: getReportByDepartment
+      tags:
+        - Reports
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A single report wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Report'
+                    required:
+                      - data
+        '404':
+          description: Department not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+        
+        
+    post:
+      summary: Create a new report for a department
+      operationId: createReportByDepartment
+      tags:
+        - Reports
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Report'
+      responses:
+        '201':
+          description: Report created successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Report'
+                    required:
+                      - data
+        '404':
+          description: Department not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+        
+    put:
+      summary: Update a report for a department
+      operationId: updateReportByDepartment
+      tags:
+        - Reports
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Report'
+      responses:
+        '200':
+          description: Report updated successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Report'
+                    required:
+                      - data
+        '404':
+          description: Department not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+          
+  /api/v1/officers/:
+    post:
+      summary: Create a new officer
+      operationId: createOfficer
+      description: Requires admin role
+      tags:
+        - Officers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Officer'
+      responses:
+        '201':
+          description: Officer created successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Officer'
+                    required:
+                      - data
+        '403':
+          description: Forbidden Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+        '409':
+          description: Officer already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error409:
+                  value:
+                    code: 409
+                    message: "Conflict"
+                    data:
+                        $ref: '#/components/schemas/Officer'
+
+  /api/v1/officers/{id}/:
+    get:
+      summary: Retrieve an officer by ID
+      operationId: retrieveOfficer
+      tags:
+        - Officers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A single officer wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Officer'
+                    required:
+                      - data
+        '404':
+          description: Officer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+    put:
+      summary: Update an officer by ID
+      operationId: updateOfficer
+      description: Requires admin role
+      tags:
+        - Officers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Officer'
+      responses:
+        '200':
+          description: Officer updated successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Officer'
+                    required:
+                      - data
+        '404':
+          description: Officer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+          
+  /api/v1/officers/{id}/records/:
+    get:
+      summary: Get the records associated with the officer
+      operationId: getRecordsByOfficer
+      tags:
+        - Records
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A JSON array of records wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Record'
+                    required:
+                      - data
+        '404':
+          description: Officer not found or no records found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+    post:
+      summary: Create a new record for an officer
+      operationId: createRecordByOfficer
+      tags:
+        - Records
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Record'
+      responses:
+        '201':
+          description: Record created successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Record'
+                    required:
+                      - data
+        '404':
+          description: Officer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'          
+  
+  /api/v1/officers/{id}/report/:
+    get:
+      summary: Get a report for an officer if the user has generated one
+      operationId: getReportByOfficer
+      tags:
+        - Reports
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A  report wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Report'
+                    required:
+                      - data
+        '404':
+          description: Officer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+
+          
+        
+    post:
+      summary: Create a new report for an officer
+      operationId: createReportByOfficer
+      tags:
+        - Reports
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Report'
+      responses:
+        '201':
+          description: Report created successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Report'
+                    required:
+                      - data
+        '404':
+          description: Officer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+
+        
+       
+
+  /api/v1/officers/{id}/watchlist/:
+    post:
+      summary: Add or remove an officer from the user's watchlist
+      operationId: addOrRemoveOfficerFromWatchlist
+      tags:
+        - Watchlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfficerWatchlist'
+      responses:
+        '201':
+          description: Officer added to watchlist successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/OfficerWatchlist'
+                    required:
+                      - data
+
+
+          
+        '200':
+          description: Officer removed from watchlist successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/OfficerWatchlist'
+                    required:
+                      - data
+         
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+  
+  /api/v1/officers/watchlist/:
+    get:
+      summary: Get all officers on the user's watchlist
+      operationId: getOfficersOnWatchlist
+      tags:
+        - Watchlist
+      responses:
+        '200':
+          description: A JSON array of officers wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Officer'
+                    required:
+                      - data
+          
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+
+  /api/v1/departments/{id}/watchlist/:
+    post:
+      summary: Add or remove a department from the user's watchlist
+      operationId: addOrRemoveDepartmentFromWatchlist
+      tags:
+        - Watchlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentWatchlist'
+      responses:
+        '201':
+          description: Department added to watchlist successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DepartmentWatchlist'
+                    required:
+                      - data
+          
+        '200':
+          description: Department removed from watchlist successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DepartmentWatchlist'
+                    required:
+                      - data
+          
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+  
+  /api/v1/departments/watchlist/:
+    get:
+      summary: Get all departments on the user's watchlist
+      operationId: getDepartmentsOnWatchlist
+      tags:
+        - Watchlist
+      responses:
+        '200':
+          description: A JSON array of departments wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Department'
+                    required:
+                      - data
+
+          
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+        
+  /api/v1/submissions/:
+    get:
+      summary: List all of the user's submissions
+      operationId: listSubmissions
+      tags:
+        - Submissions
+      responses:
+        '200':
+          description: A JSON array of submissions wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserSubmission'
+                    required:
+                      - data
+          
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: No submissions found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+    post:
+      summary: Create a new submission
+      operationId: createSubmission
+      tags:
+        - Submissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSubmission'
+      responses:
+        '201':
+          description: Submission created successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserSubmission'
+                    required:
+                      - data
+          
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+
+  /api/v1/submissions/{id}/:
+    get:
+      summary: Retrieve a submission by ID
+      operationId: retrieveSubmission
+      tags:
+        - Submissions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A single submission wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserSubmission'
+                    required:
+                      - data
+          
+        '404':
+          description: Submission not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+    put:
+      summary: Update a submission by ID
+      operationId: updateSubmission
+      description: Requires admin role
+      tags:
+        - Submissions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSubmission'
+      responses:
+        '200':
+          description: Submission updated successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserSubmission'
+                    required:
+                      - data
+          
+        '404':
+          description: Submission not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+
+  /api/v1/submissions/analysis/:
+    get:
+      summary: List all submissions that need analysis
+      operationId: listSubmissionsForAnalysis
+      tags:
+        - Submissions
+        - Analyst
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: A JSON array of submissions wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserSubmission'
+                    required:
+                      - data
+          
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: No submissions found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+  
+  /api/v1/submissions/{id}/analysis/:
+    get:
+      summary: Retrieve a submission by ID that needs analysis
+      operationId: retrieveSubmissionForAnalysis
+      tags:
+        - Submissions
+        - Analyst
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: A single submission wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserSubmission'
+                    required:
+                      - data
+          
+        '404':
+          description: Submission not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+    put:
+      summary: Update a submission by ID that needs analysis
+      operationId: updateSubmissionForAnalysis
+      tags:
+        - Submissions
+        - Analyst
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSubmission'
+      responses:
+        '200':
+          description: Submission updated successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserSubmission'
+                    required:
+                      - data
+          
+        '404':
+          description: Submission not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+                  
+  /api/v1/officers/search/image/:
+    post:
+      summary: Search for an officer by image, latitude, and longitude
+      operationId: searchOfficerByImage
+      tags:
+        - Officers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: Image file for officer search
+                latitude:
+                  type: number
+                  format: float
+                  description: Latitude for geolocation context
+                  example: 37.7749
+                longitude:
+                  type: number
+                  format: float
+                  description: Longitude for geolocation context
+                  example: -122.4194
+              required:
+                - image
+                - latitude
+                - longitude
+      responses:
+        '200':
+          description: A JSON array of officers wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Officer'
+                    required:
+                      - data
+         
+        '404':
+          description: No officers found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+ 
+  /api/v1/officers/search/:
+    post:
+      summary: Search for officers based on various criteria
+      operationId: searchOfficers
+      tags:
+        - Officers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfficerSearchRequest'
+      responses:
+        '200':
+          description: Successfully retrieved officer search results wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Officer'
+                    required:
+                      - data
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error400:
+                  value:
+                    code: 400
+                    message: "Bad Request"
+                    details: "Invalid or missing input data."
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error500:
+                  value:
+                    code: 500
+                    message: "Internal Server Error"
+                    details: "An unexpected error occurred."
+
+  /api/v1/departments/{state}/:
+    get:
+      summary: List all departments in a state
+      operationId: listDepartmentsByState
+      tags:
+        - Departments
+      parameters:
+        - name: state
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A JSON array of departments wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Department'
+                    required:
+                      - data
+          
+        '404':
+          description: No departments found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+
+  /api/v1/departments/search/:
+    post:
+      summary: Search for departments based on filters
+      operationId: searchDepartments
+      tags:
+        - Departments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentSearchRequest'
+      responses:
+        '200':
+          description: Successfully retrieved department search results wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Department'
+                    required:
+                      - data
+          
+                    
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error400:
+                  value:
+                    code: 400
+                    message: "Bad Request"
+                    details: "Invalid or missing input data."
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error500:
+                  value:
+                    code: 500
+                    message: "Internal Server Error"
+                    details: "An unexpected error occurred."
+
+
+
+  /api/v1/account/deactivate/:
+    post:
+      summary: Deactivate the user's account
+      operationId: deactivateAccount
+      tags:
+        - Account
+      responses:
+        '201':
+          description: Account deactivated successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: string
+                        example: "Account deactivated successfully"
+                    required:
+                      - data
+        
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+
+  /api/v1/subscriptions/:
+    get:
+      summary: List all of the user's subscriptions
+      operationId: listSubscriptions
+      tags:
+        - Subscriptions
+      responses:
+        '200':
+          description: A JSON array of subscriptions wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/RecurringPurchase'
+                    required:
+                      - data
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: No subscriptions found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+
+  /api/v1/subscriptions/{id}/:
+    get:
+      summary: Retrieve a subscription by ID
+      operationId: retrieveSubscription
+      tags:
+        - Subscriptions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A single subscription wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RecurringPurchase'
+                    required:
+                      - data
+        '404':
+          description: Subscription not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+
+  /api/v1/subscriptions/{id}/cancel/:
+    post:
+      summary: Cancel a subscription by ID
+      operationId: cancelSubscription
+      tags:
+        - Subscriptions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subscription canceled successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: string
+                        example: "Subscription canceled successfully"
+                    required:
+                      - data
+        '404':
+          description: Subscription not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+
+  /api/v1/versions/:
+    get:
+      summary: get the current VersionInfo object from the server.
+      operationId: getVersionInfo
+      tags:
+        - VersionInfo
+      security:
+        - None: []
+      responses:
+        '200':
+          description: A single VersionInfo object wrapped in ResponseWrapper
+          
+        '404':
+          description: VersionInfo not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+   
+  /api/v1/profile/:
+    get:
+      summary: Retrieve the user's profile
+      operationId: retrieveProfile
+      tags:
+        - ProfileData
+      responses:
+        '200':
+          description: A single user profile wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserProfile'
+                    required:
+                      - data
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+    put:
+      summary: Update the user's profile
+      operationId: updateProfile
+      tags:
+        - ProfileData
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+      responses:
+        '200':
+          description: Profile updated successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserProfile'
+                    required:
+                      - data
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+ 
+      
+
+  /api/v1/streams/:
+    get:
+      summary: Get all of the users streams
+      operationId: listStreams
+      tags:
+        - Streams
+      responses:
+        '200':
+          description: A JSON array of streams wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Stream'
+                    required:
+                      - data
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: No streams found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error404:
+                  $ref: '#/components/examples/error404'
+    post:
+      summary: Create a new stream
+      operationId: createStream
+      tags:
+        - Streams
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Stream'
+      responses:
+        '201':
+          description: Stream created successfully wrapped in ResponseWrapper
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Stream'
+                    required:
+                      - data
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error403:
+                  $ref: '#/components/examples/error403'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error401:
+                  $ref: '#/components/examples/error401'
