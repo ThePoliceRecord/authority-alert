@@ -11,6 +11,7 @@ This folder is the single source of truth for the platform’s product, build/OT
 - OTA server (local hosting): [OTA_SERVER_DOCKER.md](./OTA_SERVER_DOCKER.md)
 - API/OpenAPI specs: `spec/api_spec.yaml`, `spec/user.yaml`, `spec/subject.yaml`
  - System configuration keys: [SYSTEM_CONFIG.md](./SYSTEM_CONFIG.md)
+ - Implementation tasks: [IMPLEMENTATION_TASKS.md](./IMPLEMENTATION_TASKS.md)
 
 ## Platform Overview
 - [CUSTOMIZATION_AND_OTA.md](./CUSTOMIZATION_AND_OTA.md) – firmware layout and OTA flows.
