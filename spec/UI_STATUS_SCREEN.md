@@ -1,7 +1,7 @@
 # Status & Preview Screen Revamp
 
-Owner: YOU
-Last updated: YYYY-MM-DD
+Owner: Authority Alert Team
+Last updated: 2025-10-12
 
 ## Goals
 - Replace the legacy Seed UI status page with a modern Authority Alert dashboard.
@@ -28,6 +28,7 @@ Last updated: YYYY-MM-DD
    - Overlay camera metadata (FPS, exposure, temperature) if available from Node-RED/sscma API.
 4. **Action Bar**
    - Buttons: Start recording, Trigger snapshot, Toggle IR/LED, Run diagnostics, Launch Node-RED flows.
+   - Secure export (optional): "Export (OTP)" action is shown only when `privacy.otp_export_enabled` is true and pad media is mounted/valid (see `spec/ONE_TIME_PAD.md`).
    - Quick link to OTA updates page.
 5. **Mobile/Tablet Support**
    - Layout collapses gracefully, preview and crucial status front and center.

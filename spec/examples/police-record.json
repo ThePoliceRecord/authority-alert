@@ -1,0 +1,43 @@
+{
+  "provider": "auth0",
+  "auth": {
+    "domain": "your-tenant.us.auth0.com",
+    "client_id": "YOUR_CLIENT_ID",
+    "audience": "https://api.policerecord.example",
+    "scopes": ["profile:read", "submission:write"]
+  },
+  "api": {
+    "base_url": "https://api.policerecord.example",
+    "dept_list_url": "https://api.policerecord.example/departments",
+    "timeout_ms": 10000,
+    "tls": {
+      "verify": true,
+      "ca_path": "/etc/ssl/certs/ca-certificates.crt"
+    }
+  },
+  "rbac": {
+    "role_claim": "https://product.example/roles",
+    "admin_roles": ["admin"],
+    "investor_roles": ["investor"],
+    "camera_roles": ["camera_user"]
+  },
+  "upload": {
+    "allowed_mime": ["image/jpeg", "image/png"],
+    "max_bytes": 5242880,
+    "concurrency": 2
+  },
+  "retries": {
+    "max_attempts": 5,
+    "base_ms": 500,
+    "jitter_ms": 250
+  },
+  "queue": {
+    "enabled": true,
+    "path": "/userdata/queues/police-record",
+    "flush_interval_sec": 30
+  },
+  "logging": {
+    "level": "info",
+    "pii_scrub": true
+  }
+}

@@ -1,7 +1,7 @@
 # Privacy & Remote Access Policy
 
-Owner: YOU
-Last updated: YYYY-MM-DD
+Owner: Authority Alert Team
+Last updated: 2025-10-12
 
 ## Goals
 - Default stance: camera does not call home or send data externally unless explicitly enabled by the user.
@@ -30,6 +30,8 @@ Last updated: YYYY-MM-DD
      - **Manual Upload**: user selects timeframe/clip; device packages and posts to configured server.
      - **Scheduled Upload** (optional): user-defined triggers (e.g., high-risk detection) that queue for remote review.
    - Ensure data encrypted in transit (HTTPS/TLS). Provide local copy for audit trail.
+   - Data minimization: anonymize on device (strip EXIF, redact faces/plates where not required). No user PII collected or transmitted.
+   - Retention: server‑side 24 hours maximum (see `REMOTE_ANALYSIS.md`).
 
 3. **Remote Support / Diagnostics** (optional future feature)
    - Allow user to enable remote support session, generating temporary access token for support team.
@@ -43,6 +45,17 @@ Last updated: YYYY-MM-DD
 - Store user choices in `/userdata/config/system.json` (example). Snapshot during backup/OTA.
 - Provide CLI tool (`authority-config`) to view/set toggles for scripts and automation.
 - Document in UI help: how to disable/enable features and wipe data.
+
+Suggested keys:
+```json
+{
+  "privacy": {
+    "remote_analysis_enabled": false,
+    "otp_export_enabled": false,
+    "otp_export_max_mb": 10
+  }
+}
+```
 
 ## Network Controls
 - Use IPTables/firewall rules to block outbound traffic unless required by enabled features.
@@ -69,6 +82,10 @@ Last updated: YYYY-MM-DD
 - Upload test: simulate manual upload, confirm encryption, server response, local logs.
 
 ## Open Questions
-- Decide on remote analysis infrastructure (self-hosted vs third-party). Need API spec to integrate.
-- Determine retention policy and delete workflow for uploaded data.
-- Evaluate legal/privacy requirements for jurisdictions (e.g., logging, user consent). 
+- Evaluate third‑party analysis providers against DPA and anonymization requirements.
+- Confirm UX copy for consent dialogs referencing 24‑hour retention.
+- Align consent and logging with broadest applicable privacy standards.
+5. **OTP Export (Manual, Small Payloads)**
+   - Disabled by default. When enabled, exposes a manual export flow using a physical, removable one-time pad (see `ONE_TIME_PAD.md`).
+   - Requirements: pad media inserted; size cap (default 10 MB); no PII in payload; local minimal receipt only.
+   - Each export consumes unique pad bytes; device refuses reuse or out-of-order access. No pads stored on device.

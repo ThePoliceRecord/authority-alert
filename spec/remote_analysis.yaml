@@ -1,0 +1,117 @@
+openapi: 3.0.0
+info:
+  title: Authority Alert Remote Analysis API
+  version: 0.1.0
+  description: |
+    Minimal, privacy-preserving API for submitting anonymized media for analysis.
+    No PII is accepted or returned. Media is retained for a maximum of 24 hours.
+servers:
+  - url: https://analysis.example.org
+    description: Self-hosted analysis service
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    SubmitRequest:
+      type: object
+      properties:
+        device_id:
+          type: string
+          description: Pseudonymous rotating UUID (no stable or user-linked ID)
+          format: uuid
+        event_id:
+          type: string
+          description: Local event/capture identifier (no PII)
+        captured_at:
+          type: string
+          format: date-time
+        media:
+          type: string
+          format: binary
+          description: Anonymized media (EXIF stripped, faces/plates redacted as applicable)
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Minimal task parameters; must contain no PII
+      required: [device_id, event_id, captured_at, media]
+    SubmitResponse:
+      type: object
+      properties:
+        analysis_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, processing]
+    AnalysisResult:
+      type: object
+      properties:
+        analysis_id:
+          type: string
+        status:
+          type: string
+          enum: [processing, completed, deleted, expired]
+        results:
+          type: object
+          description: Task-specific results; must not contain PII
+paths:
+  /v1/healthz:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+  /v1/analyze:
+    post:
+      security:
+        - BearerAuth: []
+      summary: Submit anonymized media for analysis
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubmitRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitResponse'
+  /v1/analysis/{analysis_id}:
+    get:
+      security:
+        - BearerAuth: []
+      summary: Get analysis status/results
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisResult'
+        '404':
+          description: Not found (may be deleted or expired)
+    delete:
+      security:
+        - BearerAuth: []
+      summary: Delete media and results immediately
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted

@@ -1,7 +1,7 @@
 # UI & Node-RED Redesign Plan
 
-Owner: YOU
-Last updated: YYYY-MM-DD
+Owner: Authority Alert Team
+Last updated: 2025-10-12
 
 ## Objectives
 - Retain Node-RED as an automation engine but remove the forced Seed Studio UI integration and login flow.
@@ -20,6 +20,7 @@ Last updated: YYYY-MM-DD
    - Static SPA served from `/home/recamera/.node-red/public/authority-alert/` (or move to `/mnt/system/webroot`) via custom Nginx/Express service.
    - Landing page handles status polling, OOBE wizard, dashboards, and links to advanced tools.
    - Styling aligned with `spec/UI_THEME.md` palette and background.
+   - Provide optional "OTP Export" page/action (when enabled) for manual, small, anonymized exports using removable pad media (see `spec/ONE_TIME_PAD.md`).
     - Integrate OAuth2 login (Auth0 or Keycloak) for Police Record authentication using Authorization Code + PKCE; configuration determines provider endpoints.
 
 2. **Startup / Status API**
@@ -45,6 +46,7 @@ Last updated: YYYY-MM-DD
 5. **Authentication**
    - Landing page uses Authority Alert auth (JWT or session) stored server-side; Node-RED flows interact via REST/MQTT with tokens.
    - Node-RED admin remains disabled unless explicitly enabled; stored credentials set via provisioning pipeline.
+   - OTP Export feature is gated by `privacy.otp_export_enabled`; UI exposes controls only when pad media is mounted and validated.
 
 ## Implementation Steps
 1. **Refactor Static Assets**

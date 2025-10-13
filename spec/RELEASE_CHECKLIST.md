@@ -1,7 +1,7 @@
 # Testing & Release Checklist
 
-Owner: YOU
-Last updated: YYYY-MM-DD
+Owner: Authority Alert Team
+Last updated: 2025-10-12
 
 ## Pre-Build
 - [ ] Review outstanding issues/CVEs; update target versions in `spec/VERSIONS.md`.
@@ -25,6 +25,7 @@ Last updated: YYYY-MM-DD
 - [ ] AI detection flow triggers expected events.
 - [ ] OTA update simulation: `latest` + `download` + `start` using new manifest.
 - [ ] Remote upload feature respects consent (off by default, prompts when enabled).
+- [ ] OTP Export (if enabled): pad media check passes; small test file encrypts; MAC verifies on recipient; no pad or plaintext persists on device; receipt logged without PII.
 - [ ] Node-RED editor disabled unless intentionally enabled.
 - [ ] Police Record integration: OAuth2 login/refresh (Auth0/Keycloak), profile update, officer submission form, admin download (if applicable).
 - [ ] Secure remote connectivity (if enabled): tunnel setup, consent prompt, connection test via self-hosted relay.
