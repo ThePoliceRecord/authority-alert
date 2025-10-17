@@ -71,6 +71,32 @@ Last updated: YYYY-MM-DD
 - Auto download helper: `auto_download.sh:1` loops to check latest, then download.
 - Recovery + first-boot hooks: `rootfs_overlay.sh:1` can trigger factory reset or force write boot from a bundled `boot_ota.zip`.
 
+Quick path: set a custom server without UI/token
+- The supervisor reads the OTA channel from `/etc/recamera.conf/upgrade` (migrated from `/etc/upgrade`).
+- Put the device on your LAN/USB subnet and run (on the device):
+
+```
+mkdir -p /etc/recamera.conf
+echo '1,http://<host>:8080/releases/<ver>/sg2002_recamera_emmc_md5sum.txt' > /etc/recamera.conf/upgrade
+```
+
+- Then run directly:
+
+```
+/mnt/system/upgrade.sh latest
+/mnt/system/upgrade.sh download
+/mnt/system/upgrade.sh start
+```
+
+Notes
+- The file format is strict: `1,<full manifest URL>` (no spaces in the URL).
+- The manifest is the text file `sg2002_recamera_emmc_md5sum.txt` containing `<MD5> <FILENAME>`.
+- If you pass a URL ending with `.txt` to `latest`, it is used as‑is. Otherwise, `upgrade.sh` expects a GitHub Release URL and appends the manifest name.
+
+Subnet reminder
+- Some images ship USB‑NCM/AP on `192.168.42.1/24`; others use `192.168.16.1/24`.
+- If you cannot reach the device, check `ip -br a` on the camera to confirm which subnet is active and adjust URLs accordingly.
+
 ## 6) OTA Artifact + Server Spec (simple, static)
 - Artifact naming (example): `sg2002_reCamera_0.2.1_emmc_ota.zip`
   - Must contain at least: `rootfs_ext4.emmc`, `md5sum.txt`
