@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 240">
+  <defs>
+    <style>
+      .word { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-weight: 700; letter-spacing: 0.5px; }
+    </style>
+  </defs>
+  <!-- TAA badge -->
+  <g transform="translate(24,24)">
+    <rect x="0" y="0" rx="16" ry="16" width="144" height="144" fill="#0065a3"/>
+    <text x="72" y="92" text-anchor="middle" font-size="64" fill="#ffffff" class="word">TAA</text>
+  </g>
+  <!-- Wordmark -->
+  <g transform="translate(196,48)">
+    <text x="0" y="64" font-size="64" fill="#0344ff" class="word">The Authority Alert</text>
+    <rect x="2" y="88" width="520" height="8" fill="#f1d302"/>
+  </g>
+</svg>
+

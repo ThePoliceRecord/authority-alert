@@ -26,6 +26,7 @@ This folder is the single source of truth for the platform’s product, build/OT
 - [STREAMING_UPGRADE.md](./STREAMING_UPGRADE.md) – migrate Live555 to MediaMTX.
 - [.gitlab-ci.yml](../.gitlab-ci.yml) and [GITLAB_PIPELINE.md](./GITLAB_PIPELINE.md) – CI/CD stages and artifacts.
 - [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md) – validations before releasing firmware.
+ - [POC_TASKS.md](./POC_TASKS.md) – POC “lipstick” rebrand plan, assets, OTA steps.
 
 ## UI, Node-RED & Experience
 - [UI_REDESIGN.md](./UI_REDESIGN.md) – overall UX plan, Node‑RED integration.

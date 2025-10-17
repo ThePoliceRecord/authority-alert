@@ -18,18 +18,20 @@ Last updated: 2025-10-12
 Example CSS variables:
 ```css
 :root {
-  --aa-color-primary: #1E88E5;
-  --aa-color-secondary: #6C5CE7;
+  --aa-color-primary: #0344ff;   /* vivid brand blue */
+  --aa-color-secondary: #0065a3; /* deep cyan-blue */
+  --aa-accent: #f1d302;          /* warm accent yellow */
   --aa-bg: #ffffff;
-  --aa-bg-inverse: #0f1115;
+  --aa-bg-inverse: #0b0b0b;      /* near-black */
   --aa-surface: #f4f6f8;
+  --aa-surface-inverse: #2a2a27; /* jet gray */
   --aa-text: #1a1d21;
   --aa-text-muted: #5c6672;
-  --aa-text-inverse: #e6e9ee;
-  --aa-success: #2e7d32;
-  --aa-warning: #ef6c00;
-  --aa-danger: #c62828;
-  --aa-info: #0288d1;
+  --aa-text-inverse: #e0e0e0;    /* platinum */
+  --aa-success: #9be564;         /* CTA green */
+  --aa-warning: #f3b61f;         /* highlight */
+  --aa-danger: #730001;          /* deep red */
+  --aa-info: #1fa9ff;            /* cobalt blue */
 }
 ```
 
@@ -50,7 +52,7 @@ CSS example:
 ```css
 html[data-theme="dark"] {
   --aa-bg: var(--aa-bg-inverse);
-  --aa-surface: #161922;
+  --aa-surface: var(--aa-surface-inverse);
   --aa-text: var(--aa-text-inverse);
   --aa-text-muted: #a2aab6;
 }
@@ -64,18 +66,45 @@ html[data-theme="dark"] {
   "theme": {
     "name": "authority-alert",
     "lightTheme": {
-      "baseColor": "#1E88E5",
+      "baseColor": "#0344ff",
       "pageBg": "#ffffff",
       "groupBg": "#f4f6f8",
       "textColor": "#1a1d21"
     },
     "darkTheme": {
-      "baseColor": "#6C5CE7",
-      "pageBg": "#0f1115",
-      "groupBg": "#161922",
-      "textColor": "#e6e9ee"
+      "baseColor": "#0065a3",
+      "pageBg": "#0b0b0b",
+      "groupBg": "#2a2a27",
+      "textColor": "#e0e0e0"
     }
   }
+}
+```
+
+## TAA Theme (Source: thepolicerecord.com)
+- Primary: `#0344ff` (rgba(3,68,255,1))
+- Secondary: `#0065a3`
+- Accent/Highlight: `#f1d302` / `#f3b61f`
+- Success/CTA: `#9be564`
+- Danger: `#730001`
+- Background (dark): `#0b0b0b`, Surface (dark): `#2a2a27`, Text inverse: `#e0e0e0`
+
+Node‑RED editor overrides (drop into `reCamera-OS/external/buildroot/board/cvitek/CV181X/overlay/usr/lib/node_modules/node-red/custom.css`):
+```css
+:root {
+  --nr-theme-primary: #0344ff;
+  --nr-theme-accent: #f1d302;
+}
+
+/* Header branding */
+#header {
+  background: linear-gradient(rgba(6,68,250,0.2), rgba(0,0,0,0.9));
+}
+
+/* Sidebar and workspace tints */
+body.red-ui-editor {
+  --aa-bg-inverse: #0b0b0b;
+  --aa-surface-inverse: #2a2a27;
 }
 ```
 
@@ -89,4 +118,3 @@ html[data-theme="dark"] {
 ## Maintenance
 - Update tokens if branding changes; record the change in `spec/VERSIONS.md` (UI section).
 - Validate new components in both themes; add screenshots to `UI_STATUS_SCREEN.md` when available.
-

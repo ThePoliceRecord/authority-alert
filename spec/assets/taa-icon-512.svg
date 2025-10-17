@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Outer circle -->
+  <circle cx="256" cy="256" r="248" fill="#0344ff"/>
+  <!-- Inner ring -->
+  <circle cx="256" cy="256" r="200" fill="#0065a3"/>
+  <!-- Accent wedge -->
+  <path d="M256,56 A200,200 0 0,1 420,146 L256,256 Z" fill="#f1d302"/>
+  <!-- Monogram -->
+  <g transform="translate(256,270)">
+    <text text-anchor="middle" font-size="160" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif" font-weight="800" fill="#ffffff">TAA</text>
+  </g>
+</svg>
+
