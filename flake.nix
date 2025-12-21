@@ -9,206 +9,297 @@
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        # Use overlay to ensure libxcrypt has all hash algorithms (SHA-256, SHA-512, etc.)
         pkgs = import nixpkgs {
           inherit system;
           config.allowUnfree = true;
         };
 
-        # PCRE with additional soname symlinks for compatibility with prebuild binaries
-        # Some prebuild tools (like make_ext4fs) are compiled on Ubuntu/Debian which uses
-        # libpcre.so.3 soname, while NixOS PCRE uses libpcre.so.1
-        pcreCompat = pkgs.pcre.overrideAttrs (oldAttrs: {
-          postInstall = (oldAttrs.postInstall or "") + ''
-            # Create .so.3 symlinks for Ubuntu/Debian binary compatibility
-            ln -sf libpcre.so.1 $out/lib/libpcre.so.3
-            ln -sf libpcreposix.so.0 $out/lib/libpcreposix.so.3
-          '';
-        });
-
-        # Python with required packages
+        # Python with required packages for local development
         pythonEnv = pkgs.python3.withPackages (ps: with ps; [
           jinja2
           pyyaml
           pip
-          kconfiglib  # for menuconfig/defconfig
         ]);
 
-        # FHS environment for build compatibility
-        fhsEnv = pkgs.buildFHSEnv {
-          name = "recamera-os-fhs";
-          
-          targetPkgs = _pkgs: with pkgs; [
-            # Build essentials
-            gnumake
-            gcc
-            glibc
-            glibc.static
-            binutils
-            cmake
-            ninja
-            automake
-            autoconf
-            libtool
-            pkg-config
-            patchelf
-
-            # SCons / parallel build
-            scons
-            parallel
-
-            # Compression & filesystem tools
-            squashfsTools
-            cpio
-            fakeroot
-            mtools
-            bzip2
-            bzip2.dev  # for bzlib.h
-            zlib
-            zlib.dev
-            xz
-            xz.dev  # for lzma.h
-            zip
-            unzip
-            e2fsprogs  # resize2fs, mke2fs, etc.
-
-            # Kernel / bootloader build
-            flex
-            bison
-            bc
-            dtc  # device-tree-compiler
-            openssl
-            openssl.dev
-            ncurses
-            ncurses.dev  # for menuconfig
-
-            # Crypt libraries (needed for host-mkpasswd and host-python in Buildroot)
-            # libxcrypt provides libcrypt.so.2 (needed by pre-compiled host binaries)
-            # libxcrypt-legacy provides libcrypt.so.1 with full hash support (SHA-256/SHA-512)
-            libxcrypt
-            libxcrypt-legacy
-
-            # Misc build tools
-            wget
-            curl
+      in {
+        # Minimal dev shell for Docker-based builds
+        devShells.default = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            # Docker for official build method
+            docker
+            docker-compose
+            
+            # Git for version control
             git
-            jq
-            tcl
-            tree
-            rsync
-            xxd
-            file
-            which
-            patch
-            diffutils
-
-            # Python environment
+            
+            # Python for scripts
             pythonEnv
-
-            # Node.js (for potential JS tooling)
-            nodejs_18
-
-            # SSH client
-            openssh
-
-            # PCRE for regex (pcreCompat has .so.3 symlinks for prebuild tool compat)
-            pcreCompat
-            pcreCompat.dev
-
-            # CA certificates
-            cacert
-
-            # GNU coreutils
+            
+            # Basic utilities
+            gnumake
+            bash
             coreutils
             findutils
             gnugrep
             gnused
             gawk
-            gnutar
-            gzip
-
-            # Bash (provides /bin/bash in FHS)
-            bash
-            bashInteractive
-
-            # Additional tools
-            lsb-release
-            gnupg
-            perl
-
-            # Docker (optional, for docker_build.sh)
-            docker
-
-            # 32-bit libraries for cross compilation
-            pkgsi686Linux.glibc
+            
+            # Optional: for manual inspection
+            tree
+            jq
+            rsync
           ];
 
-          multiPkgs = _pkgs: with pkgs; [
-            zlib
-            glibc
-            libxcrypt
-            libxcrypt-legacy
-            pcreCompat
-          ];
-
-          runScript = "bash";
-
-          profile = ''
-            export NIX_SHELL_NAME="recamera-os-fhs"
-            
-            # CRITICAL: Sanitize LD_LIBRARY_PATH for Buildroot compatibility
-            # Buildroot fails if LD_LIBRARY_PATH contains empty paths (::) or current dir (.)
-            if [ -n "$LD_LIBRARY_PATH" ]; then
-              # Remove empty path components (::), trailing/leading colons, and current dir
-              LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | sed -e 's/::/:/g' -e 's/^://' -e 's/:$//' -e 's/:\.:/:/g' -e 's/^\.://' -e 's/:\.$//')
-              export LD_LIBRARY_PATH
+          shellHook = ''
+            # Create /bin/bash symlink if it doesn't exist (NixOS compatibility)
+            if [ ! -e /bin/bash ]; then
+              echo "Note: /bin/bash not found. Run docker_build.sh with: bash docker_build.sh"
             fi
             
-            # Add FHS library paths for prebuild binaries (make_ext4fs, etc.)
-            # These binaries expect libraries in standard FHS paths like /usr/lib
-            export LD_LIBRARY_PATH="/usr/lib:/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-            
-            # Git safe directory
-            git config --global --add safe.directory "$(pwd)" 2>/dev/null || true
-            
-            # Locate host toolchains if present
-            if [ -d "reCamera-OS/host-tools/gcc" ]; then
-              export RISCV_TOOLCHAIN_PATH="$(pwd)/reCamera-OS/host-tools/gcc"
-            fi
-
-            # Enable bash completion features for interactive use
-            shopt -s progcomp 2>/dev/null || true
-
             echo "==============================================="
-            echo " reCamera-OS / Authority Alert FHS Dev Shell"
-            echo " Python: $(python --version 2>&1)"
-            echo " GCC: $(gcc --version | head -1)"
-            echo " Make: $(make --version | head -1)"
-            echo " /bin/bash: available"
+            echo " reCamera-OS / Authority Alert Dev Shell"
+            echo "==============================================="
+            echo " Docker:  $(docker --version 2>&1 || echo 'not available')"
+            echo " Python:  $(python --version 2>&1)"
+            echo " Git:     $(git --version 2>&1)"
+            echo " Bash:    $(bash --version | head -1)"
             echo "==============================================="
             echo ""
-            echo "Build commands:"
-            echo "  cd reCamera-OS && make sg2002_recamera_emmc"
+            echo "RECOMMENDED: Use Docker for building"
+            echo "  cd reCamera-OS"
+            echo "  bash docker_build.sh sg2002_recamera_emmc"
             echo ""
-            echo "Or run a single build command:"
-            echo "  nix run .#default -- -c 'make -C reCamera-OS sg2002_recamera_emmc'"
+            echo "Or use the Nix app:"
+            echo "  nix run .#build"
+            echo ""
+            echo "Docker build uses official Ubuntu 20.04 environment"
+            echo "and avoids cross-compilation issues."
             echo ""
           '';
         };
 
-      in {
-        # The FHS dev shell for interactive use
-        devShells.default = fhsEnv.env;
+        # Convenience apps for Docker builds
+        apps = {
+          # Build using Docker (official method)
+          # Wrapper that handles git submodule setup
+          build = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "docker-build" ''
+              set -e
+              
+              TARGET=''${1:-sg2002_recamera_emmc}
+              IMAGE_NAME="recamera-os-builder"
+              DOCKERFILE="reCamera-OS/.devcontainer/Dockerfile"
+              PROJECT_ROOT="$(pwd)"
+              
+              # Build Docker image if needed
+              if ! ${pkgs.docker}/bin/docker image inspect "$IMAGE_NAME" &>/dev/null; then
+                echo "Building Docker image..."
+                ${pkgs.docker}/bin/docker build -t "$IMAGE_NAME" -f "$DOCKERFILE" reCamera-OS/
+              fi
+              
+              echo "============================================="
+              echo "Building $TARGET with Docker..."
+              echo "============================================="
+              
+              # Run Docker with parent directory mounted so .git/modules is accessible
+              HOST_UID=$(id -u)
+              HOST_GID=$(id -g)
+              HOST_UNAME=''${USER:-builder}
+              
+              ${pkgs.docker}/bin/docker run --rm -it \
+                -e HOST_UID=$HOST_UID -e HOST_GID=$HOST_GID -e HOST_UNAME=$HOST_UNAME \
+                -e HOME=/home/$HOST_UNAME \
+                -v "$PROJECT_ROOT":/work \
+                -v "$PROJECT_ROOT/reCamera-OS/output/.docker_home":/home/$HOST_UNAME \
+                --workdir /work/reCamera-OS \
+                "$IMAGE_NAME" \
+                /bin/bash -c "
+              set -e
+              if ! id \"\$HOST_UNAME\" >/dev/null 2>&1; then
+                groupadd -g \$HOST_GID \$HOST_UNAME 2>/dev/null || true
+                useradd -m -u \$HOST_UID -g \$HOST_GID -s /bin/bash \$HOST_UNAME 2>/dev/null || true
+              fi
+              chown -R \$HOST_UID:\$HOST_GID /home/\$HOST_UNAME || true
+              
+              # Ensure output directory exists and has correct permissions
+              mkdir -p /work/reCamera-OS/output || true
+              chown -R \$HOST_UID:\$HOST_GID /work/reCamera-OS/output || true
+              
+              # Run as user
+              sudo -u \$HOST_UNAME bash -c '
+                set -e
+                git config --global --add safe.directory /work
+                git config --global --add safe.directory /work/reCamera-OS
+                cd /work/reCamera-OS
+                git submodule update --init --recursive --depth 1
+                make \$TARGET
+              '
+              "
+            '');
+          };
 
-        # Package for nix run commands
-        packages.default = fhsEnv;
+          # Initialize git submodules
+          init = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "init-submodules" ''
+              set -e
+              cd reCamera-OS
+              echo "Initializing git submodules..."
+              git submodule update --init --recursive --depth 1
+              echo "Done!"
+            '');
+          };
 
-        # Convenience app for building
-        apps.build = {
-          type = "app";
-          program = toString (pkgs.writeShellScript "build-recamera" ''
-            ${fhsEnv}/bin/recamera-os-fhs -c "make -C reCamera-OS ''${1:-sg2002_recamera_emmc}"
-          '');
+          # Clean build output
+          clean = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "clean-build" ''
+              set -e
+              if [ -d "reCamera-OS/output" ]; then
+                echo "Cleaning reCamera-OS/output..."
+                rm -rf reCamera-OS/output
+                echo "Done!"
+              else
+                echo "Output directory already clean"
+              fi
+            '');
+          };
+
+          # Stage a release for OTA testing
+          ota-stage = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "ota-stage" ''
+              set -e
+              VERSION="''${1:-latest}"
+              
+              echo "============================================="
+              echo "Staging OTA release: $VERSION"
+              echo "============================================="
+              
+              # Find the latest OTA zip
+              OTA_ZIP=$(find reCamera-OS/output -type f -name '*_emmc_ota.zip' -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-)
+              
+              if [ -z "$OTA_ZIP" ]; then
+                echo "Error: No OTA zip found. Run 'nix run .#build' first."
+                exit 1
+              fi
+              
+              echo "Found: $OTA_ZIP"
+              
+              # Create release directory
+              DEST_DIR="ota_server/ota_content/releases/$VERSION"
+              mkdir -p "$DEST_DIR"
+              
+              # Copy and generate manifest
+              cp -f "$OTA_ZIP" "$DEST_DIR/"
+              cd "$DEST_DIR"
+              md5sum *.zip > sg2002_recamera_emmc_md5sum.txt
+              
+              echo ""
+              echo "Staged to: $DEST_DIR"
+              echo ""
+              echo "Start server with: nix run .#ota-serve"
+              echo "Test URL: http://localhost:8080/releases/$VERSION/sg2002_recamera_emmc_md5sum.txt"
+            '');
+          };
+
+          # Start OTA server
+          ota-serve = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "ota-serve" ''
+              set -e
+              cd ota_server
+              
+              if [ ! -d "ota_content/releases" ]; then
+                echo "Warning: No releases staged. Run 'nix run .#ota-stage' first."
+                echo ""
+              fi
+              
+              echo "Starting OTA server on http://localhost:8080..."
+              ${pkgs.docker-compose}/bin/docker-compose up -d
+              
+              # Get local IP for device configuration
+              LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+              
+              echo ""
+              echo "============================================="
+              echo "OTA Server running!"
+              echo "============================================="
+              echo ""
+              echo "Available releases:"
+              for dir in ota_content/releases/*/; do
+                VERSION=$(basename "$dir")
+                echo "  - $VERSION"
+                echo "    URL: http://$LOCAL_IP:8080/releases/$VERSION/sg2002_recamera_emmc_md5sum.txt"
+              done
+              echo ""
+              echo "On the reCamera, run:"
+              echo "  echo '1,http://$LOCAL_IP:8080/releases/latest/sg2002_recamera_emmc_md5sum.txt' | sudo tee /etc/upgrade"
+              echo "  sudo /mnt/system/upgrade.sh latest"
+              echo "  sudo /mnt/system/upgrade.sh download"
+              echo "  sudo /mnt/system/upgrade.sh start"
+              echo ""
+              echo "Stop server: nix run .#ota-stop"
+            '');
+          };
+
+          # Show OTA status and URLs
+          ota-status = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "ota-status" ''
+              LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+              
+              echo "============================================="
+              echo "OTA Server Status"
+              echo "============================================="
+              
+              # Check if running
+              if ${pkgs.docker}/bin/docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^ota-server$'; then
+                echo "Server: RUNNING on http://$LOCAL_IP:8080"
+              else
+                echo "Server: STOPPED (run: nix run .#ota-serve)"
+              fi
+              echo ""
+              
+              # List releases
+              echo "Staged releases:"
+              if [ -d "ota_server/ota_content/releases" ]; then
+                for dir in ota_server/ota_content/releases/*/; do
+                  if [ -d "$dir" ]; then
+                    VERSION=$(basename "$dir")
+                    echo "  - $VERSION"
+                  fi
+                done
+              else
+                echo "  (none - run: nix run .#ota-stage)"
+              fi
+              echo ""
+              
+              # Show device commands
+              echo "To update reCamera, SSH in and run:"
+              echo "  echo '1,http://$LOCAL_IP:8080/releases/latest/sg2002_recamera_emmc_md5sum.txt' | sudo tee /etc/upgrade"
+              echo "  sudo /mnt/system/upgrade.sh latest"
+              echo "  sudo /mnt/system/upgrade.sh download"
+              echo "  sudo /mnt/system/upgrade.sh start"
+            '');
+          };
+
+          # Stop OTA server
+          ota-stop = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "ota-stop" ''
+              cd ota_server
+              ${pkgs.docker-compose}/bin/docker-compose down
+              echo "OTA server stopped."
+            '');
+          };
         };
+
+        # Default package points to Docker build
+        packages.default = pkgs.writeShellScriptBin "recamera-build" ''
+          cd reCamera-OS
+          exec ./docker_build.sh sg2002_recamera_emmc
+        '';
       });
 }
