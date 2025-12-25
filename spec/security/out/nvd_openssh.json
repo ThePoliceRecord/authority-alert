@@ -1,0 +1,58 @@
+{
+  "all_count": 12,
+  "cpe": "cpe:2.3:a:openbsd:openssh:8.6:p1:*:*:*:*:*:*",
+  "filtered_count": 5,
+  "findings": [
+    {
+      "cve": "CVE-2023-38408",
+      "description": "The PKCS#11 feature in ssh-agent in OpenSSH before 9.3p2 has an insufficiently trustworthy search path, leading to remote code execution if an agent is forwarded to an attacker-controlled system. (Code in /usr/lib is not necessarily safe for loading into ssh-agent.) NOTE: this issue exists because of an incomplete fix for CVE-2016-10009.",
+      "detail": "CRITICAL CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2024-11-21T08:13:30.520",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2023-38408",
+      "published": "2023-07-20T03:15:10.170",
+      "score": 9.8
+    },
+    {
+      "cve": "CVE-2008-3844",
+      "description": "Certain Red Hat Enterprise Linux (RHEL) 4 and 5 packages for OpenSSH, as signed in August 2008 using a legitimate Red Hat GPG key, contain an externally introduced modification (Trojan Horse) that allows the package authors to have an unknown impact.  NOTE: since the malicious packages were not distributed from any official Red Hat sources, the scope of this issue is restricted to users who may have obtained these packages through unofficial distribution points.  As of 20080827, no unofficial distributions of this software are known.",
+      "detail": "None AV:N/AC:M/Au:N/C:C/I:C/A:C",
+      "lastModified": "2025-04-09T00:30:58.490",
+      "metric": "cvssMetricV2",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2008-3844",
+      "published": "2008-08-27T20:41:00.000",
+      "score": 9.3
+    },
+    {
+      "cve": "CVE-2024-6387",
+      "description": "A security regression (CVE-2006-5051) was discovered in OpenSSH's server (sshd). There is a race condition which can lead sshd to handle some signals in an unsafe manner. An unauthenticated, remote attacker may be able to trigger it by failing to authenticate within a set time period.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-09-30T13:52:23.540",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2024-6387",
+      "published": "2024-07-01T13:15:06.467",
+      "score": 8.1
+    },
+    {
+      "cve": "CVE-2023-51767",
+      "description": "OpenSSH through 10.0, when common types of DRAM are used, might allow row hammer attacks (for authentication bypass) because the integer value of authenticated in mm_answer_authpassword does not resist flips of a single bit. NOTE: this is applicable to a certain threat model of attacker-victim co-location in which the attacker has user privileges. NOTE: this is disputed by the Supplier, who states \"we do not consider it to be the application's responsibility to defend against platform architectural weaknesses.\"",
+      "detail": "HIGH CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-11-18T22:15:43.950",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2023-51767",
+      "published": "2023-12-24T07:15:07.410",
+      "score": 7.0
+    },
+    {
+      "cve": "CVE-2021-41617",
+      "description": "sshd in OpenSSH 6.2 through 8.x before 8.8, when certain non-default configurations are used, allows privilege escalation because supplemental groups are not initialized as expected. Helper programs for AuthorizedKeysCommand and AuthorizedPrincipalsCommand may run with privileges associated with group memberships of the sshd process, if the configuration specifies running the command as a different user.",
+      "detail": "HIGH CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2024-11-21T06:26:32.077",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-41617",
+      "published": "2021-09-26T19:15:07.263",
+      "score": 7.0
+    }
+  ],
+  "name": "openssh"
+}

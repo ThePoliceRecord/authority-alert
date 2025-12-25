@@ -1,0 +1,88 @@
+{
+  "all_count": 20,
+  "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:4.4:*:*:*:*:*:*:*",
+  "filtered_count": 8,
+  "findings": [
+    {
+      "cve": "CVE-2021-38171",
+      "description": "adts_decode_extradata in libavformat/adtsenc.c in FFmpeg 4.4 does not check the init_get_bits return value, which is a necessary step because the second argument to init_get_bits can be crafted.",
+      "detail": "CRITICAL CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2024-11-21T06:16:33.257",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-38171",
+      "published": "2021-08-21T17:15:07.700",
+      "score": 9.8
+    },
+    {
+      "cve": "CVE-2021-33815",
+      "description": "dwa_uncompress in libavcodec/exr.c in FFmpeg 4.4 allows an out-of-bounds array access because dc_count is not strictly checked.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+      "lastModified": "2024-11-21T06:09:37.263",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-33815",
+      "published": "2021-06-03T17:15:15.073",
+      "score": 8.8
+    },
+    {
+      "cve": "CVE-2021-30123",
+      "description": "FFmpeg <=4.3 contains a buffer overflow vulnerability in libavcodec through a crafted file that may lead to remote code execution.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+      "lastModified": "2024-11-21T06:03:21.060",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-30123",
+      "published": "2021-04-07T20:15:13.403",
+      "score": 8.8
+    },
+    {
+      "cve": "CVE-2022-48434",
+      "description": "libavcodec/pthread_frame.c in FFmpeg before 5.1.2, as used in VLC and other products, leaves stale hwaccel state in worker threads, which allows attackers to trigger a use-after-free and execute arbitrary code in some circumstances (e.g., hardware re-initialization upon a mid-video SPS change when Direct3D11 is used).",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2024-11-21T07:33:20.487",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2022-48434",
+      "published": "2023-03-29T17:15:07.053",
+      "score": 8.1
+    },
+    {
+      "cve": "CVE-2024-31578",
+      "description": "FFmpeg version n6.1.1 was discovered to contain a heap use-after-free via the av_hwframe_ctx_init function.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+      "lastModified": "2025-11-04T18:16:19.660",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2024-31578",
+      "published": "2024-04-17T14:15:08.563",
+      "score": 7.5
+    },
+    {
+      "cve": "CVE-2023-6603",
+      "description": "A flaw was found in FFmpeg's HLS playlist parsing. This vulnerability allows a denial of service via a maliciously crafted HLS playlist that triggers a null pointer dereference during initialization.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "lastModified": "2025-08-21T16:15:30.363",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2023-6603",
+      "published": "2024-12-31T15:15:07.490",
+      "score": 7.5
+    },
+    {
+      "cve": "CVE-2022-3109",
+      "description": "An issue was discovered in the FFmpeg package, where vp3_decode_frame in libavcodec/vp3.c lacks check of the return value of av_malloc() and will cause a null pointer dereference, impacting availability.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "lastModified": "2025-08-07T19:26:18.477",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2022-3109",
+      "published": "2022-12-16T15:15:09.483",
+      "score": 7.5
+    },
+    {
+      "cve": "CVE-2023-6605",
+      "description": "A flaw was found in FFmpeg's DASH playlist support. This vulnerability allows arbitrary HTTP GET requests to be made on behalf of the machine running FFmpeg via a crafted DASH playlist containing malicious URLs.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:L/I:L/A:N",
+      "lastModified": "2025-11-03T20:16:07.323",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2023-6605",
+      "published": "2025-01-06T17:15:14.613",
+      "score": 7.2
+    }
+  ],
+  "name": "ffmpeg"
+}

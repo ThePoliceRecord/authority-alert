@@ -1,0 +1,188 @@
+{
+  "all_count": 25,
+  "cpe": "cpe:2.3:a:python:python:3.9.5:*:*:*:*:*:*:*",
+  "filtered_count": 18,
+  "findings": [
+    {
+      "cve": "CVE-2022-37454",
+      "description": "The Keccak XKCP SHA-3 reference implementation before fdc6fef has an integer overflow and resultant buffer overflow that allows attackers to execute arbitrary code or eliminate expected cryptographic properties. This occurs in the sponge function interface.",
+      "detail": "CRITICAL CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-05-08T15:15:47.043",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2022-37454",
+      "published": "2022-10-21T06:15:09.333",
+      "score": 9.8
+    },
+    {
+      "cve": "CVE-2019-12900",
+      "description": "BZ2_decompress in decompress.c in bzip2 through 1.0.6 has an out-of-bounds write when there are many selectors.",
+      "detail": "CRITICAL CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-06-09T16:15:29.623",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2019-12900",
+      "published": "2019-06-19T23:15:09.910",
+      "score": 9.8
+    },
+    {
+      "cve": "CVE-2007-4559",
+      "description": "Directory traversal vulnerability in the (1) extract and (2) extractall functions in the tarfile module in Python allows user-assisted remote attackers to overwrite arbitrary files via a .. (dot dot) sequence in filenames in a TAR archive, a related issue to CVE-2001-1267.",
+      "detail": "CRITICAL CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-04-09T00:30:58.490",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2007-4559",
+      "published": "2007-08-28T01:17:00.000",
+      "score": 9.8
+    },
+    {
+      "cve": "CVE-2020-29396",
+      "description": "A sandboxing issue in Odoo Community 11.0 through 13.0 and Odoo Enterprise 11.0 through 13.0, when running with Python 3.6 or later, allows remote authenticated users to execute arbitrary code, leading to privilege escalation.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2024-11-21T05:23:59.430",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2020-29396",
+      "published": "2020-12-22T17:15:13.550",
+      "score": 8.8
+    },
+    {
+      "cve": "CVE-2024-9287",
+      "description": "A vulnerability has been found in the CPython `venv` module and CLI where path names provided when creating a virtual environment were not quoted properly, allowing the creator to inject commands into virtual environment \"activation\" scripts (ie \"source venv/bin/activate\"). This means that attacker-controlled virtual environments are able to run commands when the virtual environment is activated. Virtual environments which are not created by an attacker or which aren't activated before being used (ie \"./venv/bin/python\") are not affected.",
+      "detail": "HIGH CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-11-03T23:17:33.603",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2024-9287",
+      "published": "2024-10-22T17:15:06.697",
+      "score": 7.8
+    },
+    {
+      "cve": "CVE-2022-42919",
+      "description": "Python 3.9.x before 3.9.16 and 3.10.x before 3.10.9 on Linux allows local privilege escalation in a non-default configuration. The Python multiprocessing library, when used with the forkserver start method on Linux, allows pickles to be deserialized from any user in the same machine local network namespace, which in many system configurations means any user on the same machine. Pickles can execute arbitrary code. Thus, this allows for local user privilege escalation to the user that any forkserver process is running as. Setting multiprocessing.util.abstract_sockets_supported to False is a workaround. The forkserver start method for multiprocessing is not the default start method. This issue is Linux specific because only Linux supports abstract namespace sockets. CPython before 3.9 does not make use of Linux abstract namespace sockets by default. Support for users manually specifying an abstract namespace socket was added as a bugfix in 3.7.8 and 3.8.3, but users would need to make specific uncommon API calls in order to do that in CPython before 3.9.",
+      "detail": "HIGH CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-11-03T22:16:00.810",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2022-42919",
+      "published": "2022-11-07T00:15:09.697",
+      "score": 7.8
+    },
+    {
+      "cve": "CVE-2015-20107",
+      "description": "In Python (aka CPython) up to 3.10.8, the mailcap module does not add escape characters into commands discovered in the system mailcap file. This may allow attackers to inject shell commands into applications that call mailcap.findmatch with untrusted input (if they lack validation of user-provided filenames or arguments). The fix is also back-ported to 3.7, 3.8, 3.9",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:H/A:L",
+      "lastModified": "2025-11-03T22:15:43.133",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2015-20107",
+      "published": "2022-04-13T16:15:08.937",
+      "score": 7.6
+    },
+    {
+      "cve": "CVE-2024-7592",
+      "description": "There is a LOW severity vulnerability affecting CPython, specifically the\n'http.cookies' standard library module.\n\n\nWhen parsing cookies that contained backslashes for quoted characters in\nthe cookie value, the parser would use an algorithm with quadratic\ncomplexity, resulting in excess CPU resources being used while parsing the\nvalue.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "lastModified": "2025-11-03T23:17:31.847",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2024-7592",
+      "published": "2024-08-19T19:15:08.180",
+      "score": 7.5
+    },
+    {
+      "cve": "CVE-2024-6232",
+      "description": "There is a MEDIUM severity vulnerability affecting CPython.\n\n\n\n\n\nRegular expressions that allowed excessive backtracking during tarfile.TarFile header parsing are vulnerable to ReDoS via specifically-crafted tar archives.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "lastModified": "2025-11-03T23:17:30.710",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2024-6232",
+      "published": "2024-09-03T13:15:05.363",
+      "score": 7.5
+    },
+    {
+      "cve": "CVE-2023-36632",
+      "description": "The legacy email.utils.parseaddr function in Python through 3.11.4 allows attackers to trigger \"RecursionError: maximum recursion depth exceeded while calling a Python object\" via a crafted argument. This argument is plausibly an untrusted value from an application's input data that was supposed to contain a name and an e-mail address. NOTE: email.utils.parseaddr is categorized as a Legacy API in the documentation of the Python email package. Applications should instead use the email.parser.BytesParser or email.parser.Parser class. NOTE: the vendor's perspective is that this is neither a vulnerability nor a bug. The email package is intended to have size limits and to throw an exception when limits are exceeded; they were exceeded by the example demonstration code.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "lastModified": "2024-11-21T08:10:07.813",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2023-36632",
+      "published": "2023-06-25T18:15:09.313",
+      "score": 7.5
+    },
+    {
+      "cve": "CVE-2023-24329",
+      "description": "An issue in the urllib.parse component of Python before 3.11.4 allows attackers to bypass blocklisting methods by supplying a URL that starts with blank characters.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+      "lastModified": "2025-11-03T22:16:05.300",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2023-24329",
+      "published": "2023-02-17T15:15:12.243",
+      "score": 7.5
+    },
+    {
+      "cve": "CVE-2022-45061",
+      "description": "An issue was discovered in Python before 3.11.1. An unnecessary quadratic algorithm exists in one path when processing some inputs to the IDNA (RFC 3490) decoder, such that a crafted, unreasonably long name being presented to the decoder could lead to a CPU denial of service. Hostnames are often supplied by remote servers that could be controlled by a malicious actor; in such a scenario, they could trigger excessive CPU consumption on the client attempting to make use of an attacker-supplied supposed hostname. For example, the attack payload could be placed in the Location header of an HTTP response with status code 302. A fix is planned in 3.11.1, 3.10.9, 3.9.16, 3.8.16, and 3.7.16.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "lastModified": "2025-11-03T22:16:01.150",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2022-45061",
+      "published": "2022-11-09T07:15:09.887",
+      "score": 7.5
+    },
+    {
+      "cve": "CVE-2021-3737",
+      "description": "A flaw was found in python. An improperly handled HTTP response in the HTTP client code of python may allow a remote attacker, who controls the HTTP server, to make the client script enter an infinite loop, consuming CPU time. The highest threat from this vulnerability is to system availability.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "lastModified": "2025-12-17T22:15:56.970",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-3737",
+      "published": "2022-03-04T19:15:08.730",
+      "score": 7.5
+    },
+    {
+      "cve": "CVE-2020-10735",
+      "description": "A flaw was found in python. In algorithms with quadratic time complexity using non-binary bases, when using int(\"text\"), a system could take 50ms to parse an int string with 100,000 digits and 5s for 1,000,000 digits (float, decimal, int.from_bytes(), and int() for binary bases 2, 4, 8, 16, and 32 are not affected). The highest threat from this vulnerability is to system availability.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "lastModified": "2025-11-03T22:15:46.173",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2020-10735",
+      "published": "2022-09-09T14:15:08.660",
+      "score": 7.5
+    },
+    {
+      "cve": "CVE-2018-25032",
+      "description": "zlib before 1.2.12 allows memory corruption when deflating (i.e., when compressing) if the input has many distant matches.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "lastModified": "2025-08-21T20:37:11.840",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2018-25032",
+      "published": "2022-03-25T09:15:08.187",
+      "score": 7.5
+    },
+    {
+      "cve": "CVE-2009-2940",
+      "description": "The pygresql module 3.8.1 and 4.0 for Python does not properly support the PQescapeStringConn function, which might allow remote attackers to leverage escaping issues involving multibyte character encodings.",
+      "detail": "None AV:N/AC:L/Au:N/C:P/I:P/A:P",
+      "lastModified": "2025-04-09T00:30:58.490",
+      "metric": "cvssMetricV2",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2009-2940",
+      "published": "2009-10-22T16:30:00.250",
+      "score": 7.5
+    },
+    {
+      "cve": "CVE-2021-28861",
+      "description": "Python 3.x through 3.10 has an open redirection vulnerability in lib/http/server.py due to no protection against multiple (/) at the beginning of URI path which may leads to information disclosure. NOTE: this is disputed by a third party because the http.server.html documentation page states \"Warning: http.server is not recommended for production. It only implements basic security checks.\"",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:N/A:N",
+      "lastModified": "2025-12-17T22:15:56.490",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-28861",
+      "published": "2022-08-23T01:15:07.617",
+      "score": 7.4
+    },
+    {
+      "cve": "CVE-2022-26488",
+      "description": "In Python before 3.10.3 on Windows, local users can gain privileges because the search path is inadequately secured. The installer may allow a local attacker to add user-writable directories to the system search path. To exploit, an administrator must have installed Python for all users and enabled PATH entries. A non-administrative user can trigger a repair that incorrectly adds user-writable paths into PATH, enabling search-path hijacking of other users and system services. This affects Python (CPython) through 3.7.12, 3.8.x through 3.8.12, 3.9.x through 3.9.10, and 3.10.x through 3.10.2.",
+      "detail": "HIGH CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2024-11-21T06:54:02.590",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2022-26488",
+      "published": "2022-03-10T17:47:45.383",
+      "score": 7.0
+    }
+  ],
+  "name": "python"
+}

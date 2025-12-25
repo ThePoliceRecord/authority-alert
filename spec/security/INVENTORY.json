@@ -1,0 +1,16 @@
+{
+  "note": "This is a targeted inventory for CVE lookup (not a full SBOM). Update versions/CPEs as build config changes.",
+  "components": [
+    { "name": "busybox", "cpe": "cpe:2.3:a:busybox:busybox:1.33.0:*:*:*:*:*:*:*" },
+    { "name": "libopenssl", "cpe": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*" },
+    { "name": "openssh", "cpe": "cpe:2.3:a:openbsd:openssh:8.6:p1:*:*:*:*:*:*" },
+    { "name": "mosquitto", "cpe": "cpe:2.3:a:eclipse:mosquitto:2.0.10:*:*:*:*:*:*:*" },
+    { "name": "wpa_supplicant", "cpe": "cpe:2.3:a:w1.fi:wpa_supplicant:2.9:*:*:*:*:*:*:*" },
+    { "name": "hostapd", "cpe": "cpe:2.3:a:w1.fi:hostapd:2.9:*:*:*:*:*:*:*" },
+    { "name": "live555", "cpe": "cpe:2.3:a:live555:streaming_media:2021.05.03:*:*:*:*:*:*:*" },
+    { "name": "ffmpeg", "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:4.4:*:*:*:*:*:*:*" },
+    { "name": "python", "cpe": "cpe:2.3:a:python:python:3.9.5:*:*:*:*:*:*:*" },
+    { "name": "nodejs", "cpe": "cpe:2.3:a:nodejs:node.js:22.8.0:*:*:*:*:*:*:*" }
+  ]
+}
+

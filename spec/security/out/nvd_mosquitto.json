@@ -1,0 +1,48 @@
+{
+  "all_count": 9,
+  "cpe": "cpe:2.3:a:eclipse:mosquitto:2.0.10:*:*:*:*:*:*:*",
+  "filtered_count": 4,
+  "findings": [
+    {
+      "cve": "CVE-2024-10525",
+      "description": "In Eclipse Mosquitto, from version 1.3.2 through 2.0.18, if a malicious broker sends a crafted SUBACK packet with no reason codes, a client using libmosquitto may make out of bounds memory access when acting in its on_subscribe callback. This affects the mosquitto_sub and mosquitto_rr clients.",
+      "detail": "CRITICAL CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-11-03T21:16:03.947",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2024-10525",
+      "published": "2024-10-30T12:15:02.787",
+      "score": 9.8
+    },
+    {
+      "cve": "CVE-2024-8376",
+      "description": "In Eclipse Mosquitto up to version 2.0.18a, an attacker can achieve memory leaking, segmentation fault or heap-use-after-free by sending specific sequences of \"CONNECT\", \"DISCONNECT\", \"SUBSCRIBE\", \"UNSUBSCRIBE\" and \"PUBLISH\" packets.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "lastModified": "2024-11-15T17:21:02.327",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2024-8376",
+      "published": "2024-10-11T16:15:14.860",
+      "score": 7.5
+    },
+    {
+      "cve": "CVE-2023-28366",
+      "description": "The broker in Eclipse Mosquitto 1.3.2 through 2.x before 2.0.16 has a memory leak that can be abused remotely when a client sends many QoS 2 messages with duplicate message IDs, and fails to respond to PUBREC commands. This occurs because of mishandling of EAGAIN from the libc send function.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "lastModified": "2025-06-26T14:15:28.433",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2023-28366",
+      "published": "2023-09-01T16:15:07.790",
+      "score": 7.5
+    },
+    {
+      "cve": "CVE-2021-41039",
+      "description": "In versions 1.6 to 2.0.11 of Eclipse Mosquitto, an MQTT v5 client connecting with a large number of user-property properties could cause excessive CPU usage, leading to a loss of performance and possible denial of service.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "lastModified": "2024-11-21T06:25:20.313",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-41039",
+      "published": "2021-12-01T20:15:07.933",
+      "score": 7.5
+    }
+  ],
+  "name": "mosquitto"
+}

@@ -1,0 +1,118 @@
+{
+  "all_count": 15,
+  "cpe": "cpe:2.3:a:busybox:busybox:1.33.0:*:*:*:*:*:*:*",
+  "filtered_count": 11,
+  "findings": [
+    {
+      "cve": "CVE-2022-48174",
+      "description": "There is a stack overflow vulnerability in ash.c:6030 in busybox before 1.35. In the environment of Internet of Vehicles, this vulnerability can be executed from command to arbitrary code execution.",
+      "detail": "CRITICAL CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-12-18T18:20:59.987",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2022-48174",
+      "published": "2023-08-22T19:16:31.080",
+      "score": 9.8
+    },
+    {
+      "cve": "CVE-2021-42377",
+      "description": "An attacker-controlled pointer free in Busybox's hush applet leads to denial of service and possible code execution when processing a crafted shell command, due to the shell mishandling the &&& string. This may be used for remote code execution under rare conditions of filtered command input.",
+      "detail": "CRITICAL CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2024-11-21T06:27:41.657",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-42377",
+      "published": "2021-11-15T21:15:07.700",
+      "score": 9.8
+    },
+    {
+      "cve": "CVE-2022-28391",
+      "description": "BusyBox through 1.35.0 allows remote attackers to execute arbitrary code if netstat is used to print a DNS PTR record's value to a VT compatible terminal. Alternatively, the attacker could choose to change the terminal's colors.",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-06-09T16:15:33.480",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2022-28391",
+      "published": "2022-04-03T21:15:08.207",
+      "score": 8.8
+    },
+    {
+      "cve": "CVE-2021-42386",
+      "description": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the nvalloc function",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-11-03T21:15:47.403",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-42386",
+      "published": "2021-11-15T21:15:08.173",
+      "score": 7.2
+    },
+    {
+      "cve": "CVE-2021-42385",
+      "description": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the evaluate function",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-11-03T21:15:46.327",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-42385",
+      "published": "2021-11-15T21:15:08.123",
+      "score": 7.2
+    },
+    {
+      "cve": "CVE-2021-42384",
+      "description": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the handle_special function",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-11-03T21:15:46.123",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-42384",
+      "published": "2021-11-15T21:15:08.070",
+      "score": 7.2
+    },
+    {
+      "cve": "CVE-2021-42382",
+      "description": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the getvar_s function",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-11-03T21:15:45.930",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-42382",
+      "published": "2021-11-15T21:15:07.963",
+      "score": 7.2
+    },
+    {
+      "cve": "CVE-2021-42381",
+      "description": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the hash_init function",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-11-03T21:15:45.740",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-42381",
+      "published": "2021-11-15T21:15:07.913",
+      "score": 7.2
+    },
+    {
+      "cve": "CVE-2021-42380",
+      "description": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the clrvar function",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-11-03T21:15:45.550",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-42380",
+      "published": "2021-11-15T21:15:07.857",
+      "score": 7.2
+    },
+    {
+      "cve": "CVE-2021-42379",
+      "description": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the next_input_file function",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-11-03T21:15:45.317",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-42379",
+      "published": "2021-11-15T21:15:07.807",
+      "score": 7.2
+    },
+    {
+      "cve": "CVE-2021-42378",
+      "description": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the getvar_i function",
+      "detail": "HIGH CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+      "lastModified": "2025-11-03T21:15:44.973",
+      "metric": "cvssMetricV31",
+      "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-42378",
+      "published": "2021-11-15T21:15:07.753",
+      "score": 7.2
+    }
+  ],
+  "name": "busybox"
+}
