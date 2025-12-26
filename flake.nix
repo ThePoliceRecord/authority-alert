@@ -294,6 +294,164 @@
               echo "OTA server stopped."
             '');
           };
+
+          # Check submodule status
+          sub-status = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "sub-status" ''
+              echo "============================================="
+              echo "Submodule Status"
+              echo "============================================="
+              echo ""
+              
+              # Check if reCamera-OS exists
+              if [ ! -d "reCamera-OS" ]; then
+                echo "Error: reCamera-OS directory not found"
+                exit 1
+              fi
+              
+              cd reCamera-OS
+              
+              # Show submodule summary
+              git submodule summary
+              echo ""
+              
+              # Show status of submodules
+              echo "Detailed status:"
+              git status --short
+              echo ""
+              
+              # Check for uncommitted changes
+              if git status --porcelain | grep -q .; then
+                echo "Uncommitted changes detected in reCamera-OS submodule"
+                echo "Run 'nix run .#sub-diff' to see details"
+              else
+                echo "reCamera-OS submodule is clean"
+              fi
+            '');
+          };
+
+          # Show submodule diff
+          sub-diff = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "sub-diff" ''
+              cd reCamera-OS
+              echo "============================================="
+              echo "Submodule Changes (git diff)"
+              echo "============================================="
+              echo ""
+              git diff
+            '');
+          };
+
+          # Update submodules to latest commit
+          sub-update = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "sub-update" ''
+              set -e
+              cd reCamera-OS
+              echo "============================================="
+              echo "Updating submodules to latest commits..."
+              echo "============================================="
+              echo ""
+              
+              # Update all submodules recursively
+              git submodule update --remote --recursive --depth 1
+              
+              echo ""
+              echo "Submodules updated!"
+              echo ""
+              echo "New submodule commits:"
+              git submodule status
+            '');
+          };
+
+          # Reset submodules to clean state
+          sub-reset = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "sub-reset" ''
+              set -e
+              cd reCamera-OS
+              echo "============================================="
+              echo "Resetting submodules to clean state..."
+              echo "============================================="
+              echo ""
+              
+              # Reset all submodules
+              git submodule foreach --recursive git reset --hard
+              git submodule foreach --recursive git clean -fdx
+              
+              # Update to the committed state
+              git submodule update --init --recursive --depth 1
+              
+              echo ""
+              echo "Submodules reset to clean state!"
+              git submodule status
+            '');
+          };
+
+          # Commit submodule changes
+          sub-commit = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "sub-commit" ''
+              set -e
+              cd reCamera-OS
+              
+              # Check if there are changes
+              if ! git status --porcelain | grep -q .; then
+                echo "No changes to commit in reCamera-OS submodule"
+                exit 0
+              fi
+              
+              echo "============================================="
+              echo "Committing submodule changes..."
+              echo "============================================="
+              echo ""
+              
+              # Show what will be committed
+              echo "Changes to be committed:"
+              git status --short
+              echo ""
+              
+              # Prompt for commit message if not provided
+              MESSAGE="''${1:-"Update reCamera-OS submodule"}"
+              
+              # Add all changes
+              git add -A
+              
+              # Commit
+              git commit -m "$MESSAGE"
+              
+              echo ""
+              echo "Committed! New commit:"
+              git log -1 --oneline
+              echo ""
+              echo "Remember to commit the parent repo to track this submodule update:"
+              echo "  cd .."
+              echo "  git add reCamera-OS"
+              echo "  git commit -m 'Update reCamera-OS submodule'"
+            '');
+          };
+
+          # Pull latest changes for submodules
+          sub-pull = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "sub-pull" ''
+              set -e
+              cd reCamera-OS
+              echo "============================================="
+              echo "Pulling latest changes for submodules..."
+              echo "============================================="
+              echo ""
+              
+              # Pull latest for each submodule
+              git submodule foreach --recursive git pull origin $(git rev-parse --abbrev-ref HEAD)
+              
+              echo ""
+              echo "Pull complete!"
+              git submodule status
+            '');
+          };
         };
 
         # Default package points to Docker build

@@ -45,7 +45,13 @@ Or if already cloned:
 git submodule update --init --recursive
 ```
 
-### 2. Enter Development Shell
+### 2. Initialize Submodules
+
+```bash
+nix run .#init
+```
+
+### 3. Enter Development Shell
 
 ```bash
 nix develop
@@ -57,7 +63,7 @@ This provides:
 - Git, Make, and standard utilities
 - Build helper commands
 
-### 3. Build Firmware
+### 4. Build Firmware
 
 **Recommended: Use Nix app wrapper**
 
@@ -90,6 +96,12 @@ bash docker_build.sh sg2002_recamera_emmc
 | `nix run .#ota-serve` | Start local OTA server (port 8080) |
 | `nix run .#ota-status` | Show OTA server status and device commands |
 | `nix run .#ota-stop` | Stop the OTA server |
+| `nix run .#sub-status` | **Show submodule status and changes** |
+| `nix run .#sub-diff` | **Show detailed diff of submodule changes** |
+| `nix run .#sub-update` | **Update submodules to latest commits** |
+| `nix run .#sub-reset` | **Reset submodules to clean state** |
+| `nix run .#sub-commit` | **Commit submodule changes** |
+| `nix run .#sub-pull` | **Pull latest changes from submodule remotes** |
 
 ## Build Output
 
@@ -156,6 +168,66 @@ Or manually:
 rm -rf reCamera-OS/output
 ```
 
+## Submodule Management
+
+The reCamera-OS directory is a git submodule. Use these commands to manage it:
+
+### Check Submodule Status
+
+```bash
+nix run .#sub-status
+```
+
+Shows:
+- Submodule commit status
+- Uncommitted changes
+- Modified files
+
+### View Submodule Changes
+
+```bash
+nix run .#sub-diff
+```
+
+Shows detailed diff of all changes in the submodule.
+
+### Update Submodules
+
+```bash
+nix run .#sub-update
+```
+
+Updates all submodules to their latest commits from remote.
+
+### Reset Submodules
+
+```bash
+nix run .#sub-reset
+```
+
+Resets submodules to clean state (discards all changes).
+
+### Commit Submodule Changes
+
+```bash
+nix run .#sub-commit "Your commit message"
+```
+
+Commits changes in the reCamera-OS submodule. After this, you must also commit the parent repo:
+
+```bash
+git add reCamera-OS
+git commit -m "Update reCamera-OS submodule"
+```
+
+### Pull Submodule Changes
+
+```bash
+nix run .#sub-pull
+```
+
+Pulls latest changes from submodule remotes.
+
 ## Project Structure
 
 ```
@@ -192,6 +264,13 @@ If submodules are missing or corrupted:
 ```bash
 git submodule deinit -f --all
 git submodule update --init --recursive
+```
+
+Or use the Nix command:
+
+```bash
+nix run .#sub-reset
+nix run .#init
 ```
 
 ### NixOS `/bin/bash` Warning
