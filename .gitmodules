@@ -1,3 +1,4 @@
 [submodule "reCamera-OS"]
 	path = reCamera-OS
-	url = https://github.com/Seeed-Studio/reCamera-OS.git
+	url = git@github.com:ThePoliceRecord/authority-alert-OS.git
+	branch = sg200x-reCamera
