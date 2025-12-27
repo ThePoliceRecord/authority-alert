@@ -11,7 +11,7 @@ Last updated: 2025-10-12
 ## Status Screen Requirements
 1. **Global Header**
    - Authority Alert branding, background from `spec/UI_THEME.md`.
-   - Current time, device name, build version (from `sg2002_recamera_emmc_md5sum.txt` / `swupdate` version).
+   - Current time, device name, build version (from `sg2002_recamera_emmc_sha256sum.txt` / `swupdate` version).
 2. **System Tiles** (responsive grid)
    - *Camera*: sensor status, resolution, FPS, recording state.
    - *Network*: AP/STA state, IPs, Wi-Fi signal strength, OTA server connectivity.

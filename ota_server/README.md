@@ -3,7 +3,7 @@
 Lightweight Dockerized HTTP server for hosting OTA artifacts compatible with `/mnt/system/upgrade.sh`.
 
 What it serves
-- `releases/<version>/sg2002_recamera_emmc_md5sum.txt`
+- `releases/<version>/sg2002_recamera_emmc_sha256sum.txt`
 - `releases/<version>/*_emmc_ota.zip`
 
 Quick start
@@ -19,14 +19,12 @@ Quick start
    - `docker compose up -d`
 
 4) Verify locally:
-   - `curl -I http://localhost:8080/releases/0.1.0/sg2002_recamera_emmc_md5sum.txt`
+   - `curl -I http://localhost:8080/releases/0.1.0/sg2002_recamera_emmc_sha256sum.txt`
    - `curl -I http://localhost:8080/releases/0.1.0/` (directory listing enabled)
 
 5) Point device to this server and upgrade:
-   - `echo "1,http://<host>:8080/releases/0.1.0/sg2002_recamera_emmc_md5sum.txt" | sudo tee /etc/upgrade`
+   - `echo "1,http://<host>:8080/releases/0.1.0/sg2002_recamera_emmc_sha256sum.txt" | sudo tee /etc/upgrade`
    - `sudo /mnt/system/upgrade.sh latest`
-   - `sudo /mnt/system/upgrade.sh download`
-   - `sudo /mnt/system/upgrade.sh start`
 
 Notes
 - This server is static-file only. Publishing is by copying files into `ota_content/releases/<version>/` (the helper script does this for local builds).

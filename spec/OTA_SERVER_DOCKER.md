@@ -4,9 +4,8 @@ Owner: YOU
 Last updated: YYYY-MM-DD
 
 ## Goal
-- Provide a lightweight HTTP server (Docker-based) to host OTA artifacts (`sg2002_recamera_emmc_md5sum.txt`, `*_ota.zip`).
+- Provide a lightweight HTTP server (Docker-based) to host OTA artifacts (`sg2002_recamera_emmc_sha256sum.txt`, `*_ota.zip`).
 - Match the expectations of `/mnt/system/upgrade.sh` (direct manifest URLs or GitHub-style redirects).
-- Enable reproducible local testing before publishing firmware.
 
 ## Requirements
 - Docker or compatible container runtime (Compose optional but recommended).
@@ -18,14 +17,16 @@ Last updated: YYYY-MM-DD
 - Base image: `nginx:alpine` (small, static hosting). Alternative: `caddy:alpine` if auto-TLS is desired.
 - Container document root: serve files under `/usr/share/nginx/html`.
 - Host directory structure:
-  - `ota_content/releases/<version>/sg2002_recamera_emmc_md5sum.txt`
+  - `ota_content/releases/<version>/sg2002_recamera_emmc_sha256sum.txt`
   - `ota_content/releases/<version>/<artifact>.zip`
 - For HTTPS, front with reverse proxy (Traefik, Caddy) or terminate TLS inside the container.
 
 ## OTA File Requirements
-- Manifest file *must* be named `sg2002_recamera_emmc_md5sum.txt`.
-- Each line format: `<md5> <filename>` (single space).
-- ZIP archive must contain `rootfs_ext4.emmc` and `md5sum.txt`; optionally `fip.bin`, `boot.emmc`.
+- Manifest file naming:
+  - `sg2002_recamera_emmc_sha256sum.txt`
+- Each line format: `<hash> <filename>` (single space).
+  - SHA256: 64 hex characters
+- ZIP archive must contain `rootfs_ext4.emmc` and `sha256sum.txt`; optionally `fip.bin`, `boot.emmc`.
 - Device custom URL (`/etc/upgrade`) expects `1,<manifest-url>`.
 
 ## docker-compose Example
@@ -47,25 +48,23 @@ services:
 ota_content/
 └─ releases/
    └─ 0.2.1/
-      ├─ sg2002_recamera_emmc_md5sum.txt
+      ├─ sg2002_recamera_emmc_sha256sum.txt
       └─ sg2002_reCamera_0.2.1_emmc_ota.zip
 ```
 
-### Sample Manifest (`sg2002_recamera_emmc_md5sum.txt`)
+### Sample Manifest (`sg2002_recamera_emmc_sha256sum.txt`)
 ```
-d41d8cd98f00b204e9800998ecf8427e sg2002_reCamera_0.2.1_emmc_ota.zip
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  sg2002_reCamera_0.2.1_emmc_ota.zip
 ```
 
 ## Test Workflow
 1. Start server: `docker compose up -d` (from directory containing `docker-compose.yml`).
 2. Verify locally:
-   - `curl -I http://localhost:8080/releases/0.2.1/sg2002_recamera_emmc_md5sum.txt`
-   - `curl http://localhost:8080/releases/0.2.1/sg2002_recamera_emmc_md5sum.txt`
+   - `curl -I http://localhost:8080/releases/0.2.1/sg2002_recamera_emmc_sha256sum.txt`
+   - `curl http://localhost:8080/releases/0.2.1/sg2002_recamera_emmc_sha256sum.txt`
 3. On device:
-   - `echo "1,http://<host>:8080/releases/0.2.1/sg2002_recamera_emmc_md5sum.txt" | sudo tee /etc/upgrade`
+   - `echo "1,http://<host>:8080/releases/0.2.1/sg2002_recamera_emmc_sha256sum.txt" | sudo tee /etc/upgrade`
    - `sudo /mnt/system/upgrade.sh latest`
-   - `sudo /mnt/system/upgrade.sh download`
-   - `sudo /mnt/system/upgrade.sh start` (only after confirming idle slot).
 
 ## Optional Enhancements
 - **Auth**: mount custom Nginx config enabling basic auth (htpasswd) or token headers.
@@ -81,6 +80,6 @@ d41d8cd98f00b204e9800998ecf8427e sg2002_reCamera_0.2.1_emmc_ota.zip
 
 ## Next Steps
 - Create `ota_content/` scaffold and commit placeholder README (optional).
-- Automate manifest generation (md5sum command in build scripts).
+- Automate manifest generation (sha256sum command in build scripts).
 - Integrate into CI/CD (e.g., publish image to registry, deploy with Ansible/K8s).
 - Update this spec if you switch to swupdate `.swu` flow or add staging channels.

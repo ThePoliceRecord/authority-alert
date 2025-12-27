@@ -11,14 +11,14 @@ This page captures the common field issues we’ve seen and the quickest working
 
 ```
 mkdir -p /etc/recamera.conf
-echo '1,http://<host>:8080/releases/<ver>/sg2002_recamera_emmc_md5sum.txt' > /etc/recamera.conf/upgrade
+echo '1,http://<host>:8080/releases/<ver>/sg2002_recamera_emmc_sha256sum.txt' > /etc/recamera.conf/upgrade
 /mnt/system/upgrade.sh latest
 /mnt/system/upgrade.sh download
 /mnt/system/upgrade.sh start
 ```
 
 Notes
-- The manifest is a plain text file `sg2002_recamera_emmc_md5sum.txt` with `<MD5> <FILENAME>` and no extra spaces.
+- The manifest is a plain text file `sg2002_recamera_emmc_sha256sum.txt` with `<HASH> <FILENAME>` and no extra spaces.
 - `latest` accepts the manifest URL directly; if a non‐`.txt` URL is used, it tries a GitHub‑style redirect.
 
 ## Network: can’t reach the camera
@@ -52,6 +52,6 @@ dnsmasq --interface="$IF" --bind-interfaces \
 - Watch CPU while streaming (`top`); if pegged, the stream will be uneven. Also try RTSP over LAN instead of Wi‑Fi to isolate RF.
 
 ## Verify OTA artifacts quickly
-- Manifest reachable: `curl -I http://<host>:8080/releases/<ver>/sg2002_recamera_emmc_md5sum.txt`
+- Manifest reachable: `curl -I http://<host>:8080/releases/<ver>/sg2002_recamera_emmc_sha256sum.txt`
 - OTA zip size: `curl -sI http://<host>:8080/releases/<ver>/<zip> | awk '/Content-Length/ {printf "%.1f MB\n",$2/1048576}'`
 

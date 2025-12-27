@@ -64,7 +64,7 @@ Last updated: YYYY-MM-DD
 ## Integration with OTA Workflow
 - After successful build, copy OTA artifacts into OTA server content directory (`spec/OTA_SERVER_DOCKER.md`).
 - Use `spec/version_audit.sh` to verify versions before publishing.
-- Update manifests (`sg2002_recamera_emmc_md5sum.txt`) with `md5sum <zip> > manifest`.
+- Update manifests (`sg2002_recamera_emmc_sha256sum.txt`) with `sha256sum <zip> > manifest`.
 
 ## Next Steps
 - Confirm `docker_build.sh` image tag matches internal requirements (document inside script if needed).

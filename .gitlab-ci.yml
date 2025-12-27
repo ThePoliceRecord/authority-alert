@@ -64,7 +64,7 @@ package:
     - find output/${TARGET}/install/soc_${TARGET} -maxdepth 1 -name '*_ota.zip' -print -exec cp {} ota_release/releases/${OTA_VERSION:-devel}/ \;
     - (
         cd ota_release/releases/${OTA_VERSION:-devel} &&
-        md5sum *.zip > sg2002_recamera_emmc_md5sum.txt
+        sha256sum *.zip > sg2002_recamera_emmc_sha256sum.txt
       )
     - ls -R ota_release
   artifacts:

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Stages the latest OTA zip into ota_content/releases/<version>/
-# and generates sg2002_recamera_emmc_md5sum.txt
+# and generates sg2002_recamera_emmc_sha256sum.txt
 #
 # Usage:
 #   ./prepare_release.sh <version> [build_dir]
@@ -61,18 +61,18 @@ echo "Staging: $OTA_ZIP -> $DEST_DIR/"
 cp -f "$OTA_ZIP" "$DEST_DIR/"
 
 pushd "$DEST_DIR" >/dev/null
-echo "Generating manifest: sg2002_recamera_emmc_md5sum.txt"
-md5sum *.zip > sg2002_recamera_emmc_md5sum.txt
+echo "Generating SHA256 manifest: sg2002_recamera_emmc_sha256sum.txt"
+sha256sum *.zip > sg2002_recamera_emmc_sha256sum.txt
 popd >/dev/null
 
 echo "Done. Files in: $DEST_DIR"
 echo
 echo "Test URLs (replace <host> if remote):"
-echo "  http://localhost:8080/releases/${VERSION}/sg2002_recamera_emmc_md5sum.txt"
+echo "  http://localhost:8080/releases/${VERSION}/sg2002_recamera_emmc_sha256sum.txt"
 echo "  http://localhost:8080/releases/${VERSION}/$(basename "$OTA_ZIP")"
 echo
 echo "On device, set OTA source and run upgrade:"
-echo "  echo '1,http://<host>:8080/releases/${VERSION}/sg2002_recamera_emmc_md5sum.txt' | sudo tee /etc/upgrade"
+echo "  echo '1,http://<host>:8080/releases/${VERSION}/sg2002_recamera_emmc_sha256sum.txt' | sudo tee /etc/upgrade"
 echo "  sudo /mnt/system/upgrade.sh latest"
 echo "  sudo /mnt/system/upgrade.sh download"
 echo "  sudo /mnt/system/upgrade.sh start"

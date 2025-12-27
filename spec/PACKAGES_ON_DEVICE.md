@@ -77,7 +77,7 @@ Guidance
 - Primary OTA: `upgrade.sh` A/B updater
   - Script: `reCamera-OS/external/ramdisk/rootfs/overlay/cv181x_musl_riscv64/system/upgrade.sh:1`
   - Auto‑poller: `.../system/auto_download.sh:1`
-  - Custom server toggle: `/etc/upgrade` (e.g., `1,<md5-url>`)
+  - Custom server toggle: `/etc/upgrade` (e.g., `1,<sha256-url>`)
 - swupdate available (with website installed) but not auto‑started by default
   - Buildroot: `reCamera-OS/external/buildroot/configs/cvitek_CV181X_musl_riscv64_defconfig:556`
   - Entrypoint: `reCamera-OS/external/buildroot/package/swupdate/swupdate.sh:1`
@@ -119,7 +119,7 @@ Guidance
 - TTYD: set `TTYD_CREDENTIAL` in `/etc/ttyd.conf` or disable TTYD if SSH is sufficient. Consider TLS termination if exposed.
 - Avahi/dnsmasq: disable on untrusted networks unless required.
 - OPKG: disable or restrict feeds on production devices.
-- OTA: current script uses MD5; prefer SHA256/signing (or swupdate with signatures) for production.
+- OTA: current script uses SHA256; prefer signing (or swupdate with signatures) for production.
 
 ## Open Decisions (fill in)
 - Remote access: [ ] SSH only  [ ] TTYD only  [ ] Both (dev only)

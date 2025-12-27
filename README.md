@@ -111,7 +111,7 @@ After a successful build, artifacts are located at:
 reCamera-OS/output/sg2002_recamera_emmc/install/soc_sg2002_recamera_emmc/
 ├── *_emmc_ota.zip      # OTA update package
 ├── *_sdk.tar.gz        # SDK for application development
-└── sg2002_recamera_emmc_md5sum.txt
+└── sg2002_recamera_emmc_sha256sum.txt
 ```
 
 ## Development Workflow
@@ -136,7 +136,7 @@ The `ota-serve` command will display the exact commands to run on your reCamera:
 
 ```
 On the reCamera, run:
-  echo '1,http://192.168.1.x:8080/releases/latest/sg2002_recamera_emmc_md5sum.txt' | sudo tee /etc/upgrade
+  echo '1,http://192.168.1.x:8080/releases/latest/sg2002_recamera_emmc_sha256sum.txt' | sudo tee /etc/upgrade
   sudo /mnt/system/upgrade.sh latest
   sudo /mnt/system/upgrade.sh download
   sudo /mnt/system/upgrade.sh start

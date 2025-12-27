@@ -26,7 +26,7 @@ Last updated: YYYY-MM-DD
 
 ### Firmware / OTA Updates
 - **Risks**: Malicious OTA zip or MITM.
-- **Mitigations**: Serve OTA over HTTPS; verify md5/sha signatures; future plan for signed packages; manual consent logs.
+- **Mitigations**: Serve OTA over HTTPS; verify sha256 signatures; future plan for signed packages; manual consent logs.
 
 ### Node-RED Flows & Custom Nodes
 - **Risks**: Vulnerable third-party nodes, unauthorized flow changes.

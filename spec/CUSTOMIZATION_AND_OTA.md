@@ -63,11 +63,11 @@ Last updated: YYYY-MM-DD
   - `ROOTFS` and `ROOTFS2` support A/B; `USERDATA` holds overlays and staging.
 - Script entrypoint: `upgrade.sh:1`
   - Commands:
-    - `latest [url]` -> resolve MD5 manifest URL from GitHub Release or custom URL.
-    - `download` -> fetch `*_ota.zip` into recovery partition and verify md5.
+    - `latest [url]` -> resolve SHA256 manifest URL from GitHub Release or custom URL.
+    - `download` -> fetch `*_ota.zip` into recovery partition and verify sha256.
     - `start [zip]` -> write `fip.bin`, `boot.emmc` if needed, then write `rootfs_ext4.emmc` to inactive slot, switch `use_part_b`, reset counters.
     - `recovery` -> set `factory_reset=1` and exit; handled on next boot by `rootfs_overlay.sh:1`.
-  - Integrity check: md5sum comparison between zip’s `md5sum.txt` and streamed writes.
+  - Integrity check: SHA256 comparison between zip's checksum file and streamed writes.
 - Auto download helper: `auto_download.sh:1` loops to check latest, then download.
 - Recovery + first-boot hooks: `rootfs_overlay.sh:1` can trigger factory reset or force write boot from a bundled `boot_ota.zip`.
 
@@ -77,7 +77,7 @@ Quick path: set a custom server without UI/token
 
 ```
 mkdir -p /etc/recamera.conf
-echo '1,http://<host>:8080/releases/<ver>/sg2002_recamera_emmc_md5sum.txt' > /etc/recamera.conf/upgrade
+echo '1,http://<host>:8080/releases/<ver>/sg2002_recamera_emmc_sha256sum.txt' > /etc/recamera.conf/upgrade
 ```
 
 - Then run directly:
@@ -90,7 +90,8 @@ echo '1,http://<host>:8080/releases/<ver>/sg2002_recamera_emmc_md5sum.txt' > /et
 
 Notes
 - The file format is strict: `1,<full manifest URL>` (no spaces in the URL).
-- The manifest is the text file `sg2002_recamera_emmc_md5sum.txt` containing `<MD5> <FILENAME>`.
+- The manifest is a text file containing `<HASH> <FILENAME>`:
+  - `sg2002_recamera_emmc_sha256sum.txt` (SHA256, 64 hex characters)
 - If you pass a URL ending with `.txt` to `latest`, it is used as‑is. Otherwise, `upgrade.sh` expects a GitHub Release URL and appends the manifest name.
 
 Subnet reminder
@@ -99,24 +100,26 @@ Subnet reminder
 
 ## 6) OTA Artifact + Server Spec (simple, static)
 - Artifact naming (example): `sg2002_reCamera_0.2.1_emmc_ota.zip`
-  - Must contain at least: `rootfs_ext4.emmc`, `md5sum.txt`
+  - Must contain at least: `rootfs_ext4.emmc`, `sha256sum.txt`
   - Optional: `fip.bin`, `boot.emmc` (bootloader/boot partition updates)
-- Release manifest file: `sg2002_recamera_emmc_md5sum.txt`
+- Release manifest file (server-side):
+  - `sg2002_recamera_emmc_sha256sum.txt`
   - Contains at least one line matching `.*ota.zip`
-  - Format per `upgrade.sh:1` parser: `<MD5> <FILENAME>` (space separated)
-    - Example: `d41d8cd98f00b204e9800998ecf8427e sg2002_reCamera_0.2.1_emmc_ota.zip`
+  - Format per `upgrade.sh:1` parser: `<HASH> <FILENAME>` (space separated)
+    - SHA256 Example: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 sg2002_reCamera_0.2.1_emmc_ota.zip`
 - Server layout (static HTTP is fine):
   - Directory: `https://your.server/reCamera/<version>/`
-    - Files: `sg2002_recamera_emmc_md5sum.txt`, `sg2002_reCamera_0.2.1_emmc_ota.zip`
+    - Files: `sg2002_recamera_emmc_sha256sum.txt`, `sg2002_reCamera_0.2.1_emmc_ota.zip`
   - Latest pointer options accepted by `upgrade.sh:1`:
     - A GitHub Release URL (auto-redirect, then `tag` -> `download` path rewrite).
-    - Or a direct URL to `sg2002_recamera_emmc_md5sum.txt`.
+    - Or a direct URL to `sg2002_recamera_emmc_sha256sum.txt`.
 - Device configuration for custom server:
   - File: `reCamera-OS/external/build/boards/cv181x/sg2002_recamera_emmc/rootfs/etc/upgrade:1`
-  - Content: `1,https://your.server/reCamera/0.2.1/sg2002_recamera_emmc_md5sum.txt`
+  - Content: `1,https://your.server/reCamera/0.2.1/sg2002_recamera_emmc_sha256sum.txt`
     - Format: `1,<url>` enables custom; `0` disables.
 - Security notes:
-  - Current implementation uses MD5 only. For production, plan to add SHA256 and optional signature verification in `upgrade.sh:1` or migrate to swupdate with signed images.
+  - **Current implementation uses SHA256.**
+  - For production, consider adding optional signature verification in `upgrade.sh:1` or migrate to swupdate with signed images.
 
 ## 7) swupdate (optional path)
 - Buildroot package present: `external/buildroot/package/swupdate/swupdate.mk:1`
@@ -137,7 +140,7 @@ Subnet reminder
 
 ## 9) Build and Release Process (OTA)
 - Build: `make sg2002_recamera_emmc` -> produces `*_emmc_ota.zip`.
-- Publish: upload zip and `sg2002_recamera_emmc_md5sum.txt` to your server.
+- Publish: upload zip and `sg2002_recamera_emmc_sha256sum.txt` to your server.
 - On device CLI flow (manual):
   - `sudo /mnt/system/upgrade.sh latest <url>`
   - `sudo /mnt/system/upgrade.sh download`
@@ -148,16 +151,17 @@ Subnet reminder
 ## 10) Decisions, Tasks, Open Questions
 - Decisions
   - OTA transport: [ ] GitHub Releases [ ] Static HTTP [ ] swupdate
-  - Integrity: [ ] MD5 (current) [ ] SHA256 [ ] Signed
+  - Integrity: [x] SHA256 (current) [ ] Signed
   - Update style: [x] A/B rootfs [ ] In-place rootfs
 - Tasks
+  - [x] Migrate from MD5 to SHA256 integrity verification
   - [ ] Choose server option and publish a test release dir
-  - [ ] Create and host `sg2002_recamera_emmc_md5sum.txt`
-  - [ ] Publish one `*_emmc_ota.zip` with valid `md5sum.txt`
+  - [ ] Create and host `sg2002_recamera_emmc_sha256sum.txt`
+  - [ ] Publish one `*_emmc_ota.zip` with valid `sha256sum.txt`
   - [ ] Set `/etc/upgrade` to custom and verify `latest`+`download`
   - [ ] Run `start`, confirm partition switch and rollback safety
   - [ ] Add OTA status to WebUI or logs, if desired
-  - [ ] Optional: extend `upgrade.sh` to SHA256/signature
+  - [ ] Optional: extend `upgrade.sh` to signature verification
 - Open Questions
   - Do we need delta updates? (rdiff/rsync)
   - Do we need update staging approvals/device groups?

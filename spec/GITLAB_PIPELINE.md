@@ -6,7 +6,7 @@ Last updated: YYYY-MM-DD
 ## Objectives
 - Automate builds of reCamera OS images using the existing Docker toolchain.
 - Run post-build sanity checks (version audit, boot scripts lint).
-- Publish OTA-ready artifacts (`*_ota.zip`, `sg2002_recamera_emmc_md5sum.txt`) as pipeline artifacts.
+- Publish OTA-ready artifacts (`*_ota.zip`, `sg2002_recamera_emmc_sha256sum.txt`) as pipeline artifacts.
 - Optional hooks for pushing artifacts to the OTA Docker server or external storage.
 
 ## Runner Requirements
@@ -26,7 +26,7 @@ Last updated: YYYY-MM-DD
 1. **prepare** – checkout submodules, setup environment metadata.
 2. **build** – run `./docker_build.sh $TARGET` to produce images.
 3. **audit** – execute `spec/version_audit.sh` on the build output using appropriate container; capture report.
-4. **package** – generate `sg2002_recamera_emmc_md5sum.txt`, collect OTA zip, and expose as artifacts.
+4. **package** – generate `sg2002_recamera_emmc_sha256sum.txt`, collect OTA zip, and expose as artifacts.
 5. **publish** (optional/manual) – push artifacts to OTA server via `curl`/`scp` or other mechanism.
 
 ## Sample `.gitlab-ci.yml`
@@ -98,7 +98,7 @@ package:
     - apk add --no-cache bash coreutils
     - mkdir -p ota_release/releases/${OTA_VERSION}
     - find output/${TARGET}/install/soc_${TARGET} -name '*_ota.zip' -maxdepth 1 -print -exec cp {} ota_release/releases/${OTA_VERSION}/ \;
-    - (cd ota_release/releases/${OTA_VERSION} && md5sum *.zip > sg2002_recamera_emmc_md5sum.txt)
+    - (cd ota_release/releases/${OTA_VERSION} && sha256sum *.zip > sg2002_recamera_emmc_sha256sum.txt)
     - ls -R ota_release
   artifacts:
     expire_in: 4 weeks

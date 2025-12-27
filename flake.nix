@@ -171,13 +171,8 @@
             type = "app";
             program = toString (pkgs.writeShellScript "ota-stage" ''
               set -e
-              VERSION="''${1:-latest}"
               
-              echo "============================================="
-              echo "Staging OTA release: $VERSION"
-              echo "============================================="
-              
-              # Find the latest OTA zip
+              # Find the latest OTA zip first
               OTA_ZIP=$(find reCamera-OS/output -type f -name '*_emmc_ota.zip' -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-)
               
               if [ -z "$OTA_ZIP" ]; then
@@ -187,6 +182,28 @@
               
               echo "Found: $OTA_ZIP"
               
+              # Determine version
+              if [ -n "$1" ]; then
+                VERSION="$1"
+              else
+                # Try to extract version from filename (e.g. sg2002_reCamera_0.2.2_emmc_ota.zip -> 0.2.2)
+                FILENAME=$(basename "$OTA_ZIP")
+                # Extract 0.2.2 from sg2002_reCamera_0.2.2_emmc_ota.zip
+                # Pattern: *_reCamera_<VERSION>_emmc_ota.zip
+                VERSION=$(echo "$FILENAME" | sed -n 's/.*_reCamera_\(.*\)_emmc_ota.zip/\1/p')
+                
+                if [ -z "$VERSION" ]; then
+                  echo "Could not auto-detect version from filename. Defaulting to 'latest'."
+                  VERSION="latest"
+                else
+                  echo "Auto-detected version: $VERSION"
+                fi
+              fi
+              
+              echo "============================================="
+              echo "Staging OTA release: $VERSION"
+              echo "============================================="
+              
               # Create release directory
               DEST_DIR="ota_server/ota_content/releases/$VERSION"
               mkdir -p "$DEST_DIR"
@@ -194,13 +211,13 @@
               # Copy and generate manifest
               cp -f "$OTA_ZIP" "$DEST_DIR/"
               cd "$DEST_DIR"
-              md5sum *.zip > sg2002_recamera_emmc_md5sum.txt
+              sha256sum *.zip > sg2002_recamera_emmc_sha256sum.txt
               
               echo ""
               echo "Staged to: $DEST_DIR"
               echo ""
               echo "Start server with: nix run .#ota-serve"
-              echo "Test URL: http://localhost:8080/releases/$VERSION/sg2002_recamera_emmc_md5sum.txt"
+              echo "Test URL: http://localhost:8080/releases/$VERSION/sg2002_recamera_emmc_sha256sum.txt"
             '');
           };
 
@@ -231,11 +248,11 @@
               for dir in ota_content/releases/*/; do
                 VERSION=$(basename "$dir")
                 echo "  - $VERSION"
-                echo "    URL: http://$LOCAL_IP:8080/releases/$VERSION/sg2002_recamera_emmc_md5sum.txt"
+                echo "    URL: http://$LOCAL_IP:8080/releases/$VERSION/sg2002_recamera_emmc_sha256sum.txt"
               done
               echo ""
               echo "On the reCamera, run:"
-              echo "  echo '1,http://$LOCAL_IP:8080/releases/latest/sg2002_recamera_emmc_md5sum.txt' | sudo tee /etc/upgrade"
+              echo "  echo '1,http://$LOCAL_IP:8080/releases/latest/sg2002_recamera_emmc_sha256sum.txt' | sudo tee /etc/upgrade"
               echo "  sudo /mnt/system/upgrade.sh latest"
               echo "  sudo /mnt/system/upgrade.sh download"
               echo "  sudo /mnt/system/upgrade.sh start"
@@ -278,7 +295,7 @@
               
               # Show device commands
               echo "To update reCamera, SSH in and run:"
-              echo "  echo '1,http://$LOCAL_IP:8080/releases/latest/sg2002_recamera_emmc_md5sum.txt' | sudo tee /etc/upgrade"
+              echo "  echo '1,http://$LOCAL_IP:8080/releases/latest/sg2002_recamera_emmc_sha256sum.txt' | sudo tee /etc/upgrade"
               echo "  sudo /mnt/system/upgrade.sh latest"
               echo "  sudo /mnt/system/upgrade.sh download"
               echo "  sudo /mnt/system/upgrade.sh start"
