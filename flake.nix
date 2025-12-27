@@ -72,6 +72,13 @@
             echo "Or use the Nix app:"
             echo "  nix run .#build"
             echo ""
+            echo "OTA server workflow:"
+            echo "  nix run .#ota-stage      # Stage latest build"
+            echo "  nix run .#ota-serve      # Start server"
+            echo "  nix run .#ota-status     # Check status"
+            echo "  nix run .#ota-stop       # Stop server"
+            echo "  nix run .#ota-clean      # Remove all releases"
+            echo ""
             echo "Docker build uses official Ubuntu 20.04 environment"
             echo "and avoids cross-compilation issues."
             echo ""
@@ -309,6 +316,55 @@
               cd ota_server
               ${pkgs.docker-compose}/bin/docker-compose down
               echo "OTA server stopped."
+            '');
+          };
+
+          # Clean OTA releases
+          ota-clean = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "ota-clean" ''
+              set -e
+              
+              RELEASES_DIR="ota_server/ota_content/releases"
+              
+              if [ ! -d "$RELEASES_DIR" ]; then
+                echo "No releases directory found. Already clean."
+                exit 0
+              fi
+              
+              # Check if directory is empty
+              if [ -z "$(ls -A $RELEASES_DIR)" ]; then
+                echo "Releases directory is already empty."
+                exit 0
+              fi
+              
+              echo "============================================="
+              echo "Cleaning OTA Releases"
+              echo "============================================="
+              echo ""
+              echo "The following releases will be removed:"
+              for dir in $RELEASES_DIR/*/; do
+                if [ -d "$dir" ]; then
+                  VERSION=$(basename "$dir")
+                  echo "  - $VERSION"
+                fi
+              done
+              echo ""
+              
+              # Confirm deletion
+              read -p "Are you sure you want to delete all releases? [y/N] " -n 1 -r
+              echo ""
+              if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                echo "Cancelled."
+                exit 0
+              fi
+              
+              # Remove all releases
+              rm -rf $RELEASES_DIR/*
+              
+              echo ""
+              echo "All releases cleaned!"
+              echo "Run 'nix run .#ota-stage' to stage a new release."
             '');
           };
 
