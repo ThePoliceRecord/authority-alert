@@ -2,3 +2,7 @@
 	path = reCamera-OS
 	url = git@github.com:ThePoliceRecord/authority-alert-OS.git
 	branch = sg200x-reCamera
+[submodule "sscma-example-sg200x"]
+	path = sscma-example-sg200x
+	url = https://github.com/ThePoliceRecord/sscma-example-sg200x.git
+	branch = development
