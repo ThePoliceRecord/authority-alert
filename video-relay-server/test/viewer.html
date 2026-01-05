@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Relay Viewer Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/jmuxer@2.0.4/dist/jmuxer.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .button-danger {
+            background: #dc3545;
+        }
+        .button-danger:hover {
+            background: #c82333;
+        }
+        #videoPlayer {
+            width: 100%;
+            max-width: 1280px;
+            height: auto;
+            background: #000;
+            border-radius: 4px;
+        }
+        .status {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.connecting {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .log {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log div {
+            padding: 2px 0;
+        }
+        .log .error {
+            color: #dc3545;
+        }
+        .log .info {
+            color: #17a2b8;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .stat-label {
+            color: #6c757d;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 Video Relay Viewer Test</h1>
+        
+        <div class="controls">
+            <div class="form-group">
+                <label for="serverUrl">Relay Server URL:</label>
+                <input type="text" id="serverUrl" value="ws://localhost:8443/ws" placeholder="ws://localhost:8443/ws">
+            </div>
+            
+            <div class="form-group">
+                <label for="cameraId">Camera ID:</label>
+                <input type="text" id="cameraId" value="camera_12345" placeholder="camera_12345">
+            </div>
+            
+            <div class="form-group">
+                <label for="token">JWT Token:</label>
+                <input type="text" id="token" placeholder="Bearer token (leave empty to disable auth)">
+            </div>
+            
+            <div>
+                <button id="connectBtn" onclick="connect()">Connect</button>
+                <button id="disconnectBtn" onclick="disconnect()" disabled class="button-danger">Disconnect</button>
+            </div>
+        </div>
+        
+        <div id="status" class="status disconnected">
+            Status: Disconnected
+        </div>
+        
+        <video id="videoPlayer" controls autoplay muted playsinline></video>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">Frames Received</div>
+                <div id="framesReceived" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Bytes Received</div>
+                <div id="bytesReceived" class="stat-value">0 MB</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Connection Time</div>
+                <div id="connectionTime" class="stat-value">--:--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Buffer Health</div>
+                <div id="bufferHealth" class="stat-value">--</div>
+            </div>
+        </div>
+        
+        <div class="log">
+            <div><strong>Log:</strong></div>
+            <div id="logContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let jmuxer = null;
+        let stats = {
+            framesReceived: 0,
+            bytesReceived: 0,
+            connectionStart: null
+        };
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = type;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function updateStatus(state, message) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${state}`;
+            statusDiv.textContent = `Status: ${message}`;
+        }
+
+        function updateStats() {
+            document.getElementById('framesReceived').textContent = stats.framesReceived;
+            document.getElementById('bytesReceived').textContent = 
+                (stats.bytesReceived / 1024 / 1024).toFixed(2) + ' MB';
+            
+            if (stats.connectionStart) {
+                const elapsed = Math.floor((Date.now() - stats.connectionStart) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('connectionTime').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            const video = document.getElementById('videoPlayer');
+            if (video && video.buffered && video.buffered.length > 0) {
+                const buffered = video.buffered.end(0) - video.currentTime;
+                document.getElementById('bufferHealth').textContent = 
+                    buffered.toFixed(1) + 's';
+            }
+        }
+
+        function connect() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            const cameraId = document.getElementById('cameraId').value;
+            const token = document.getElementById('token').value;
+
+            if (!serverUrl || !cameraId) {
+                log('Server URL and Camera ID are required', 'error');
+                return;
+            }
+
+            log(`Connecting to ${serverUrl}...`);
+            updateStatus('connecting', 'Connecting...');
+            
+            // Initialize jmuxer for H.264 decoding
+            jmuxer = new JMuxer({
+                node: 'videoPlayer',
+                mode: 'video',
+                flushingTime: 0,
+                fps: 30,
+                debug: false,
+                clearBuffer: true
+            });
+            log('jmuxer initialized for H.264 decoding');
+
+            // Create WebSocket connection
+            ws = new WebSocket(serverUrl);
+            ws.binaryType = 'arraybuffer';
+
+            if (token) {
+                // Note: WebSocket constructor doesn't support custom headers
+                // Token should be sent in first message or URL query param
+                log('Note: Token should be sent via subprotocol or first message');
+            }
+
+            ws.onopen = () => {
+                log('WebSocket connected');
+                updateStatus('connected', 'Connected');
+                stats.connectionStart = Date.now();
+                
+                // Send subscribe message
+                const subscribeMsg = {
+                    type: 'subscribe',
+                    camera_id: cameraId
+                };
+                ws.send(JSON.stringify(subscribeMsg));
+                log(`Subscribed to camera: ${cameraId}`);
+
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('disconnectBtn').disabled = false;
+
+                // Start stats update
+                setInterval(updateStats, 1000);
+            };
+
+            ws.onmessage = (event) => {
+                if (event.data instanceof ArrayBuffer) {
+                    // Binary video data (raw H.264 NAL units)
+                    stats.framesReceived++;
+                    stats.bytesReceived += event.data.byteLength;
+
+                    // Feed to jmuxer
+                    if (jmuxer) {
+                        const buffer = new Uint8Array(event.data);
+                        jmuxer.feed({
+                            video: buffer
+                        });
+                    }
+                } else {
+                    // JSON message
+                    try {
+                        const msg = JSON.parse(event.data);
+                        log(`Received: ${msg.type}`, 'info');
+                        
+                        if (msg.type === 'camera_offline') {
+                            log(`Camera ${msg.camera_id} went offline`, 'error');
+                        }
+                    } catch (e) {
+                        log('Failed to parse message: ' + e.message, 'error');
+                    }
+                }
+            };
+
+            ws.onerror = (error) => {
+                log('WebSocket error: ' + error, 'error');
+                updateStatus('disconnected', 'Error');
+            };
+
+            ws.onclose = () => {
+                log('WebSocket closed');
+                updateStatus('disconnected', 'Disconnected');
+                document.getElementById('connectBtn').disabled = false;
+                document.getElementById('disconnectBtn').disabled = true;
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            if (jmuxer) {
+                jmuxer.destroy();
+                jmuxer = null;
+            }
+            log('Disconnected');
+        }
+
+        // Auto-connect on load (optional)
+        // window.onload = () => connect();
+    </script>
+</body>
+</html>

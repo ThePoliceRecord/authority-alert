@@ -1,0 +1,22 @@
+server:
+  host: "0.0.0.0"
+  port: 8443
+  read_timeout: 60   # seconds
+  write_timeout: 60  # seconds
+  tls_cert: "/etc/ssl/cert.pem"
+  tls_key: "/etc/ssl/key.pem"
+
+auth:
+  enabled: false
+  jwt_public_key_path: "jwt-public.pem"
+  jwt_private_key_path: "jwt-private.pem"
+
+limits:
+  max_cameras_per_viewer: 5
+  max_viewers_per_camera: 10
+  max_message_size_bytes: 1048576  # 1MB
+  connection_idle_timeout: 300     # 5 minutes
+
+log:
+  level: "info"   # debug, info, warn, error
+  format: "json"  # json, text

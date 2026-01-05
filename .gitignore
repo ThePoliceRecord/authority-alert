@@ -2,3 +2,5 @@ build.log
 /temp
 /temp/*
 .ccache
+video-relay-server/jwt-private.pem
+video-relay-server/jwt-public.pem
