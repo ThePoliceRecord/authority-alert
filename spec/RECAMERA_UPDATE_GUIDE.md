@@ -40,7 +40,7 @@ graph LR
 **1. Install Driver**
 ```powershell
 # Download from GitHub releases
-https://github.com/Seeed-Studio/reCamera/releases/download/0.0.1/CviUsbDownloadInstallDriver.zip
+https://github.com/ThePoliceRecord/authority-alert-OS/releases/download/0.0.1/CviUsbDownloadInstallDriver.zip
 
 # Extract and run installer
 # Install-CviUsbDriver.exe
@@ -49,7 +49,7 @@ https://github.com/Seeed-Studio/reCamera/releases/download/0.0.1/CviUsbDownloadI
 **2. Download Tools**
 ```powershell
 # Download CviBurn CLI
-https://github.com/Seeed-Studio/reCamera/releases/download/0.0.1/CviBurn_v2.0_cli_windows.zip
+https://github.com/ThePoliceRecord/authority-alert-OS/releases/download/0.0.1/CviBurn_v2.0_cli_windows.zip
 
 # Extract to folder, e.g., C:\CviBurn
 cd C:\CviBurn
