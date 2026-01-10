@@ -32,6 +32,9 @@
             # Git for version control
             git
             
+            # GitHub CLI (used by nix run .#release for PR/merge workflows)
+            gh
+            
             # Python for scripts
             pythonEnv
             
@@ -67,6 +70,9 @@
             echo ""
             echo "Build reCamera-OS SDK:"
             echo "  nix run .#build"
+            echo ""
+            echo "Cut a release (tags all 3 repos using the top version in reCamera-OS/CHANGELOG.md):"
+            echo "  nix run .#release"
             echo ""
             echo "OTA server workflow:"
             echo "  nix run .#ota-stage      # Stage latest build"
@@ -143,6 +149,108 @@
                 make \$TARGET
               '
               "
+            '');
+          };
+
+          # Cut a release (tag + push 3 repos, and PR/merge for protected OS repo)
+          release = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "release" ''
+              set -euo pipefail
++
+              PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+              cd "$PROJECT_ROOT"
++
+              CHANGELOG="reCamera-OS/CHANGELOG.md"
+              if [ ! -f "$CHANGELOG" ]; then
+                echo "ERROR: $CHANGELOG not found. Run from the superproject root."
+                exit 1
+              fi
++
+              VERSION=$(grep -m1 -E '^##[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+' "$CHANGELOG" \
+                | sed -E 's/^##[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
++
+              if [ -z "$VERSION" ]; then
+                echo "ERROR: Could not parse version from top of $CHANGELOG"
+                echo "Expected a line like: ## 0.2.5 (YYYY-MM-DD)"
+                exit 1
+              fi
++
+              echo "============================================="
+              echo "Cutting release: $VERSION"
+              echo "============================================="
++
+              ensure_clean() {
+                local dir="$1"
+                ( cd "$dir" && [ -z "$(git status --porcelain)" ] ) || {
+                  echo "ERROR: Working tree not clean: $dir"
+                  ( cd "$dir" && git status --porcelain )
+                  exit 1
+                }
+              }
++
+              ensure_tag_absent() {
+                local dir="$1"
+                ( cd "$dir" && ! git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null ) || {
+                  echo "ERROR: Tag already exists in $dir: $VERSION"
+                  exit 1
+                }
+              }
++
+              ensure_clean "$PROJECT_ROOT"
+              ensure_clean "$PROJECT_ROOT/reCamera-OS"
+              ensure_clean "$PROJECT_ROOT/sscma-example-sg200x"
++
+              ensure_tag_absent "$PROJECT_ROOT"
+              ensure_tag_absent "$PROJECT_ROOT/reCamera-OS"
+              ensure_tag_absent "$PROJECT_ROOT/sscma-example-sg200x"
++
+              # Tag all three repos (annotated tags)
+              ( cd "$PROJECT_ROOT" && git tag -a "$VERSION" -m "$VERSION" )
+              ( cd "$PROJECT_ROOT/reCamera-OS" && git tag -a "$VERSION" -m "$VERSION" )
+              ( cd "$PROJECT_ROOT/sscma-example-sg200x" && git tag -a "$VERSION" -m "$VERSION" )
++
+              # Push tags
+              ( cd "$PROJECT_ROOT" && git push origin "$VERSION" )
+              ( cd "$PROJECT_ROOT/reCamera-OS" && git push origin "$VERSION" )
+              ( cd "$PROJECT_ROOT/sscma-example-sg200x" && git push origin "$VERSION" )
++
+              # Push branches where permitted
+              ( cd "$PROJECT_ROOT" && git push origin HEAD ) || true
+              ( cd "$PROJECT_ROOT/sscma-example-sg200x" && git push origin HEAD ) || true
++
+              # authority-alert-OS usually requires PR for development. Push a release branch and attempt PR/merge via gh.
+              ( cd "$PROJECT_ROOT/reCamera-OS" && {
+                  RELEASE_BRANCH="release/$VERSION"
+                  git branch -f "$RELEASE_BRANCH" HEAD
+                  git push -u origin "$RELEASE_BRANCH"
++
+                  echo "Attempting to create+merge PR via gh (if authenticated)..."
+                  if ${pkgs.gh}/bin/gh auth status >/dev/null 2>&1; then
+                    # Create PR (idempotent-ish: if it already exists, gh will error)
+                    ${pkgs.gh}/bin/gh pr create \
+                      --repo ThePoliceRecord/authority-alert-OS \
+                      --base development \
+                      --head "$RELEASE_BRANCH" \
+                      --title "chore(release): $VERSION" \
+                      --body "Release $VERSION (tags created from top of CHANGELOG)." \
+                      || true
++
+                    # Attempt merge; if branch protection blocks, this will fail and print why.
+                    ${pkgs.gh}/bin/gh pr merge \
+                      --repo ThePoliceRecord/authority-alert-OS \
+                      --merge \
+                      --delete-branch \
+                      --auto \
+                      "$RELEASE_BRANCH" \
+                      || true
+                  else
+                    echo "gh is not authenticated. Run: gh auth login"
+                    echo "Then open the PR manually: https://github.com/ThePoliceRecord/authority-alert-OS/pull/new/$RELEASE_BRANCH"
+                  fi
+                })
++
+              echo "Done. Release version: $VERSION"
             '');
           };
 
