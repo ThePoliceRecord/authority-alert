@@ -1,7 +1,7 @@
 # OTA Update Server (Docker Spec)
 
 Owner: YOU
-Last updated: YYYY-MM-DD
+Last updated: 2026-01-10
 
 ## Goal
 - Provide a lightweight HTTP server (Docker-based) to host OTA artifacts (`sg2002_recamera_emmc_sha256sum.txt`, `*_ota.zip`).
@@ -72,6 +72,14 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  sg2002_reCamer
 - **Indexing**: add `index.html` with version list; `upgrade.sh` only needs manifest but humans may want UI.
 - **Automation**: script to copy files from `output/sg2002_recamera_emmc/install/...` into `ota_content/releases/<version>/` and regenerate manifest.
 - **swupdate support**: host `.swu` files alongside `.zip` for devices using swupdate.
+
+## Alternative Workflow (no server): Supervisor UI upload
+
+If you don't want to run a hosted OTA server for a one-off update, the Supervisor supports staging an OTA zip via upload:
+- `POST /api/deviceMgr/uploadUpdatePackage` (multipart form, field `file`)
+- `POST /api/deviceMgr/applyUploadedUpdatePackage`
+
+This uses the same upgrader but skips the download step.
 
 ## Security Notes
 - Serve over HTTPS on public networks to prevent tampering.

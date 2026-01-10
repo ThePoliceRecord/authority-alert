@@ -1,7 +1,7 @@
 # Customization and OTA Plan
 
-Owner: YOU
-Last updated: YYYY-MM-DD
+ Owner: YOU
+Last updated: 2026-01-10
 
 ## 1) Goals
 - Understand where and how to customize reCamera-OS.
@@ -97,6 +97,33 @@ Notes
 Subnet reminder
 - Some images ship USB‑NCM/AP on `192.168.42.1/24`; others use `192.168.16.1/24`.
 - If you cannot reach the device, check `ip -br a` on the camera to confirm which subnet is active and adjust URLs accordingly.
+
+### 5.1) Supervisor UI: upload a custom OTA package (local staging)
+
+The Supervisor Web UI supports **uploading a custom OTA zip directly to the device** and then applying it.
+
+Key points:
+- The uploaded file must be an OTA zip whose filename ends with `*_ota.zip`.
+- The supervisor stages the file under `/userdata/.upgrade/` and writes a local manifest under `/tmp/upgrade/`.
+- Applying the staged package runs the same A/B upgrade flow as normal OTA (writes inactive rootfs slot, flips boot env).
+
+API (Supervisor):
+- Upload OTA zip (multipart):
+  - `POST /api/deviceMgr/uploadUpdatePackage`
+  - Form field: `file`
+- Inspect staged package:
+  - `GET /api/deviceMgr/getUploadedUpdatePackage`
+  - Returns: `{ exists, fileName, checksum, osName, version, size }`
+- Apply staged package:
+  - `POST /api/deviceMgr/applyUploadedUpdatePackage`
+- Track progress / cancel (shared with normal updates):
+  - `GET /api/deviceMgr/getUpdateProgress`
+  - `POST /api/deviceMgr/cancelUpdate`
+
+Staging locations:
+- OTA zip: `/userdata/.upgrade/<filename>`
+- Manifest: `/tmp/upgrade/sg2002_recamera_emmc_sha256sum.txt`
+- Cached version metadata: `/tmp/upgrade/version.json`
 
 ## 6) OTA Artifact + Server Spec (simple, static)
 - Artifact naming (example): `sg2002_reCamera_0.2.1_emmc_ota.zip`
