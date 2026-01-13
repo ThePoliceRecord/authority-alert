@@ -75,7 +75,9 @@
             echo "  nix run .#release"
             echo ""
             echo "OTA server workflow:"
-            echo "  nix run .#ota-stage      # Stage latest build"
+            echo "  nix run .#ota-stage      # Stage latest build (SHA256 manifest)"
+            echo "  nix run .#ota-stage-md5  # Stage latest build (MD5 manifest + md5sum.txt in zip)"
+            echo "  nix run .#ota-stage-both # Stage latest build (both SHA256 + MD5 manifests)"
             echo "  nix run .#ota-serve      # Start server"
             echo "  nix run .#ota-status     # Check status"
             echo "  nix run .#ota-stop       # Stop server"
@@ -157,29 +159,29 @@
             type = "app";
             program = toString (pkgs.writeShellScript "release" ''
               set -euo pipefail
-+
+
               PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
               cd "$PROJECT_ROOT"
-+
+
               CHANGELOG="reCamera-OS/CHANGELOG.md"
               if [ ! -f "$CHANGELOG" ]; then
                 echo "ERROR: $CHANGELOG not found. Run from the superproject root."
                 exit 1
               fi
-+
+
               VERSION=$(grep -m1 -E '^##[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+' "$CHANGELOG" \
                 | sed -E 's/^##[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
-+
+
               if [ -z "$VERSION" ]; then
                 echo "ERROR: Could not parse version from top of $CHANGELOG"
                 echo "Expected a line like: ## 0.2.5 (YYYY-MM-DD)"
                 exit 1
               fi
-+
+
               echo "============================================="
               echo "Cutting release: $VERSION"
               echo "============================================="
-+
+
               ensure_clean() {
                 local dir="$1"
                 ( cd "$dir" && [ -z "$(git status --porcelain)" ] ) || {
@@ -188,7 +190,7 @@
                   exit 1
                 }
               }
-+
+
               ensure_tag_absent() {
                 local dir="$1"
                 ( cd "$dir" && ! git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null ) || {
@@ -196,35 +198,35 @@
                   exit 1
                 }
               }
-+
+
               ensure_clean "$PROJECT_ROOT"
               ensure_clean "$PROJECT_ROOT/reCamera-OS"
               ensure_clean "$PROJECT_ROOT/sscma-example-sg200x"
-+
+
               ensure_tag_absent "$PROJECT_ROOT"
               ensure_tag_absent "$PROJECT_ROOT/reCamera-OS"
               ensure_tag_absent "$PROJECT_ROOT/sscma-example-sg200x"
-+
+
               # Tag all three repos (annotated tags)
               ( cd "$PROJECT_ROOT" && git tag -a "$VERSION" -m "$VERSION" )
               ( cd "$PROJECT_ROOT/reCamera-OS" && git tag -a "$VERSION" -m "$VERSION" )
               ( cd "$PROJECT_ROOT/sscma-example-sg200x" && git tag -a "$VERSION" -m "$VERSION" )
-+
+
               # Push tags
               ( cd "$PROJECT_ROOT" && git push origin "$VERSION" )
               ( cd "$PROJECT_ROOT/reCamera-OS" && git push origin "$VERSION" )
               ( cd "$PROJECT_ROOT/sscma-example-sg200x" && git push origin "$VERSION" )
-+
+
               # Push branches where permitted
               ( cd "$PROJECT_ROOT" && git push origin HEAD ) || true
               ( cd "$PROJECT_ROOT/sscma-example-sg200x" && git push origin HEAD ) || true
-+
+
               # authority-alert-OS usually requires PR for development. Push a release branch and attempt PR/merge via gh.
               ( cd "$PROJECT_ROOT/reCamera-OS" && {
                   RELEASE_BRANCH="release/$VERSION"
                   git branch -f "$RELEASE_BRANCH" HEAD
                   git push -u origin "$RELEASE_BRANCH"
-+
+
                   echo "Attempting to create+merge PR via gh (if authenticated)..."
                   if ${pkgs.gh}/bin/gh auth status >/dev/null 2>&1; then
                     # Create PR (idempotent-ish: if it already exists, gh will error)
@@ -235,7 +237,7 @@
                       --title "chore(release): $VERSION" \
                       --body "Release $VERSION (tags created from top of CHANGELOG)." \
                       || true
-+
+
                     # Attempt merge; if branch protection blocks, this will fail and print why.
                     ${pkgs.gh}/bin/gh pr merge \
                       --repo ThePoliceRecord/authority-alert-OS \
@@ -249,7 +251,7 @@
                     echo "Then open the PR manually: https://github.com/ThePoliceRecord/authority-alert-OS/pull/new/$RELEASE_BRANCH"
                   fi
                 })
-+
+
               echo "Done. Release version: $VERSION"
             '');
           };
@@ -333,6 +335,85 @@
               echo ""
               echo "Start server with: nix run .#ota-serve"
               echo "Test URL: http://localhost:8080/releases/$VERSION/sg2002_recamera_emmc_sha256sum.txt"
+            '');
+          };
+
+          # Stage a release for OTA testing (MD5 compatibility)
+          ota-stage-md5 = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "ota-stage-md5" ''
+              set -e
+              
+              OTA_ZIP=$(find reCamera-OS/output -type f -name '*_emmc_ota.zip' -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-)
+              if [ -z "$OTA_ZIP" ]; then
+                echo "Error: No OTA zip found. Run 'nix run .#build' first."
+                exit 1
+              fi
+              
+              echo "Found: $OTA_ZIP"
+              
+              if [ -n "$1" ]; then
+                VERSION="$1"
+              else
+                FILENAME=$(basename "$OTA_ZIP")
+                VERSION=$(echo "$FILENAME" | sed -n 's/.*_reCamera_\(.*\)_emmc_ota.zip/\1/p')
+                if [ -z "$VERSION" ]; then
+                  echo "Could not auto-detect version from filename. Defaulting to 'latest'."
+                  VERSION="latest"
+                else
+                  echo "Auto-detected version: $VERSION"
+                fi
+              fi
+              
+              echo "============================================="
+              echo "Staging OTA release (MD5): $VERSION"
+              echo "============================================="
+              
+              bash ota_server/prepare_release.sh "$VERSION" "$OTA_ZIP" --md5
+              
+              echo ""
+              echo "Start server with: nix run .#ota-serve"
+              echo "Test URL: http://localhost:8080/releases/$VERSION/sg2002_recamera_emmc_md5sum.txt"
+            '');
+          };
+
+          # Stage a release for OTA testing (both manifests)
+          ota-stage-both = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "ota-stage-both" ''
+              set -e
+              
+              OTA_ZIP=$(find reCamera-OS/output -type f -name '*_emmc_ota.zip' -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-)
+              if [ -z "$OTA_ZIP" ]; then
+                echo "Error: No OTA zip found. Run 'nix run .#build' first."
+                exit 1
+              fi
+              
+              echo "Found: $OTA_ZIP"
+              
+              if [ -n "$1" ]; then
+                VERSION="$1"
+              else
+                FILENAME=$(basename "$OTA_ZIP")
+                VERSION=$(echo "$FILENAME" | sed -n 's/.*_reCamera_\(.*\)_emmc_ota.zip/\1/p')
+                if [ -z "$VERSION" ]; then
+                  echo "Could not auto-detect version from filename. Defaulting to 'latest'."
+                  VERSION="latest"
+                else
+                  echo "Auto-detected version: $VERSION"
+                fi
+              fi
+              
+              echo "============================================="
+              echo "Staging OTA release (SHA256+MD5): $VERSION"
+              echo "============================================="
+              
+              bash ota_server/prepare_release.sh "$VERSION" "$OTA_ZIP" --both
+              
+              echo ""
+              echo "Start server with: nix run .#ota-serve"
+              echo "SHA256 URL: http://localhost:8080/releases/$VERSION/sg2002_recamera_emmc_sha256sum.txt"
+              echo "MD5 URL:    http://localhost:8080/releases/$VERSION/sg2002_recamera_emmc_md5sum.txt"
             '');
           };
 
