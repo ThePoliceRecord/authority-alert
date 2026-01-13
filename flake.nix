@@ -161,6 +161,43 @@
               set -euo pipefail
 
               PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+
+              # Flags:
+              #   --version X.Y.Z  Override changelog-derived version
+              #   --force          Delete existing *local* tags before re-tagging (remote tags are NOT rewritten)
+              #   --dry-run        Print actions without mutating tags/branches or pushing
+              FORCE_LOCAL_TAGS=0
+              DRY_RUN=0
+              OVERRIDE_VERSION=""
+              while [ "$#" -gt 0 ]; do
+                case "$1" in
+                  --version)
+                    if [ "$#" -lt 2 ]; then
+                      echo "ERROR: --version requires an argument like 0.2.7"
+                      exit 1
+                    fi
+                    shift
+                    OVERRIDE_VERSION="$1"
+                    ;;
+                  --force)
+                    FORCE_LOCAL_TAGS=1
+                    ;;
+                  --dry-run)
+                    DRY_RUN=1
+                    ;;
+                  -h|--help)
+                    echo "Usage: nix run .#release -- [--version X.Y.Z] [--force] [--dry-run]"
+                    exit 0
+                    ;;
+                  *)
+                    echo "ERROR: Unknown argument: $1"
+                    echo "Usage: nix run .#release -- [--version X.Y.Z] [--force] [--dry-run]"
+                    exit 1
+                    ;;
+                esac
+                shift
+              done
+
               cd "$PROJECT_ROOT"
 
               CHANGELOG="reCamera-OS/CHANGELOG.md"
@@ -169,8 +206,12 @@
                 exit 1
               fi
 
-              VERSION=$(grep -m1 -E '^##[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+' "$CHANGELOG" \
-                | sed -E 's/^##[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+              if [ -n "$OVERRIDE_VERSION" ]; then
+                VERSION="$OVERRIDE_VERSION"
+              else
+                VERSION=$(grep -m1 -E '^##[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+' "$CHANGELOG" \
+                  | sed -E 's/^##[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+              fi
 
               if [ -z "$VERSION" ]; then
                 echo "ERROR: Could not parse version from top of $CHANGELOG"
@@ -182,8 +223,19 @@
               echo "Cutting release: $VERSION"
               echo "============================================="
 
+              run() {
+                if [ "$DRY_RUN" -eq 1 ]; then
+                  echo "+ $*"
+                else
+                  "$@"
+                fi
+              }
+
               ensure_clean() {
                 local dir="$1"
+                if [ "$DRY_RUN" -eq 1 ]; then
+                  return 0
+                fi
                 ( cd "$dir" && [ -z "$(git status --porcelain)" ] ) || {
                   echo "ERROR: Working tree not clean: $dir"
                   ( cd "$dir" && git status --porcelain )
@@ -191,46 +243,69 @@
                 }
               }
 
-              ensure_tag_absent() {
+              ensure_tag_ok_or_prepare() {
+                # Accept an existing tag iff it points at HEAD (idempotent reruns).
+                # If --force is set, delete the local tag (but do not force-push remote tags).
                 local dir="$1"
-                ( cd "$dir" && ! git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null ) || {
-                  echo "ERROR: Tag already exists in $dir: $VERSION"
-                  exit 1
-                }
+                (
+                  cd "$dir"
+
+                  if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
+                    if [ "$FORCE_LOCAL_TAGS" -eq 1 ]; then
+                      echo "NOTE: Deleting existing local tag in $dir: $VERSION (due to --force)"
+                      run git tag -d "$VERSION" >/dev/null
+                      return 0
+                    fi
+
+                    local tag_commit head_commit
+                    tag_commit="$(git rev-list -n1 "$VERSION")"
+                    head_commit="$(git rev-parse HEAD)"
+                    if [ "$tag_commit" = "$head_commit" ]; then
+                      echo "NOTE: Tag already exists in $dir at HEAD; reusing: $VERSION"
+                      return 0
+                    fi
+
+                    echo "ERROR: Tag already exists in $dir, but does not point at HEAD: $VERSION"
+                    echo "       tag -> $tag_commit"
+                    echo "       HEAD -> $head_commit"
+                    echo "Fix: bump the version in reCamera-OS/CHANGELOG.md, or re-run with --force (local-only), or delete/retag manually."
+                    exit 1
+                  fi
+                )
               }
 
               ensure_clean "$PROJECT_ROOT"
               ensure_clean "$PROJECT_ROOT/reCamera-OS"
               ensure_clean "$PROJECT_ROOT/sscma-example-sg200x"
 
-              ensure_tag_absent "$PROJECT_ROOT"
-              ensure_tag_absent "$PROJECT_ROOT/reCamera-OS"
-              ensure_tag_absent "$PROJECT_ROOT/sscma-example-sg200x"
+              ensure_tag_ok_or_prepare "$PROJECT_ROOT"
+              ensure_tag_ok_or_prepare "$PROJECT_ROOT/reCamera-OS"
+              ensure_tag_ok_or_prepare "$PROJECT_ROOT/sscma-example-sg200x"
 
               # Tag all three repos (annotated tags)
-              ( cd "$PROJECT_ROOT" && git tag -a "$VERSION" -m "$VERSION" )
-              ( cd "$PROJECT_ROOT/reCamera-OS" && git tag -a "$VERSION" -m "$VERSION" )
-              ( cd "$PROJECT_ROOT/sscma-example-sg200x" && git tag -a "$VERSION" -m "$VERSION" )
+              ( cd "$PROJECT_ROOT" && git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null || run git tag -a "$VERSION" -m "$VERSION" )
+              ( cd "$PROJECT_ROOT/reCamera-OS" && git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null || run git tag -a "$VERSION" -m "$VERSION" )
+              ( cd "$PROJECT_ROOT/sscma-example-sg200x" && git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null || run git tag -a "$VERSION" -m "$VERSION" )
 
               # Push tags
-              ( cd "$PROJECT_ROOT" && git push origin "$VERSION" )
-              ( cd "$PROJECT_ROOT/reCamera-OS" && git push origin "$VERSION" )
-              ( cd "$PROJECT_ROOT/sscma-example-sg200x" && git push origin "$VERSION" )
+              ( cd "$PROJECT_ROOT" && run git push origin "$VERSION" )
+              ( cd "$PROJECT_ROOT/reCamera-OS" && run git push origin "$VERSION" )
+              ( cd "$PROJECT_ROOT/sscma-example-sg200x" && run git push origin "$VERSION" )
 
               # Push branches where permitted
-              ( cd "$PROJECT_ROOT" && git push origin HEAD ) || true
-              ( cd "$PROJECT_ROOT/sscma-example-sg200x" && git push origin HEAD ) || true
+              ( cd "$PROJECT_ROOT" && run git push origin HEAD ) || true
+              ( cd "$PROJECT_ROOT/sscma-example-sg200x" && run git push origin HEAD ) || true
 
               # authority-alert-OS usually requires PR for development. Push a release branch and attempt PR/merge via gh.
               ( cd "$PROJECT_ROOT/reCamera-OS" && {
                   RELEASE_BRANCH="release/$VERSION"
-                  git branch -f "$RELEASE_BRANCH" HEAD
-                  git push -u origin "$RELEASE_BRANCH"
+                  run git branch -f "$RELEASE_BRANCH" HEAD
+                  run git push -u origin "$RELEASE_BRANCH"
 
                   echo "Attempting to create+merge PR via gh (if authenticated)..."
                   if ${pkgs.gh}/bin/gh auth status >/dev/null 2>&1; then
                     # Create PR (idempotent-ish: if it already exists, gh will error)
-                    ${pkgs.gh}/bin/gh pr create \
+                    run ${pkgs.gh}/bin/gh pr create \
                       --repo ThePoliceRecord/authority-alert-OS \
                       --base development \
                       --head "$RELEASE_BRANCH" \
@@ -239,7 +314,7 @@
                       || true
 
                     # Attempt merge; if branch protection blocks, this will fail and print why.
-                    ${pkgs.gh}/bin/gh pr merge \
+                    run ${pkgs.gh}/bin/gh pr merge \
                       --repo ThePoliceRecord/authority-alert-OS \
                       --merge \
                       --delete-branch \
