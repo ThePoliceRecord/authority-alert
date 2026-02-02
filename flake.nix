@@ -83,6 +83,10 @@
             echo "  nix run .#ota-stop       # Stop server"
             echo "  nix run .#ota-clean      # Remove all releases"
             echo ""
+            echo "Flash recovery image to SD card:"
+            echo "  nix run .#flash-recovery      # Flash latest recovery image"
+            echo "  nix run .#flash-recovery 0.2.6 # Flash specific version"
+            echo ""
             echo "Submodule Nix flakes (use independently):"
             echo "  cd reCamera-OS && nix develop          # SDK build environment"
             echo "  cd sscma-example-sg200x && nix develop # SSCMA development"
@@ -780,13 +784,178 @@
               echo "Pulling latest changes for submodules..."
               echo "============================================="
               echo ""
-              
+
               # Pull latest for each submodule
               git submodule foreach --recursive git pull origin $(git rev-parse --abbrev-ref HEAD)
-              
+
               echo ""
               echo "Pull complete!"
               git submodule status
+            '');
+          };
+
+          # Flash recovery image to SD card
+          flash-recovery = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "flash-recovery" ''
+              set -e
+
+              # Parse optional version argument
+              VERSION="''${1:-}"
+
+              # Find recovery zip(s)
+              INSTALL_DIR="reCamera-OS/output/sg2002_recamera_emmc/install/soc_sg2002_recamera_emmc"
+
+              if [ -n "$VERSION" ]; then
+                # Find specific version
+                RECOVERY_ZIP="$INSTALL_DIR/sg2002_AuthorityOS_''${VERSION}_emmc_recovery.zip"
+                if [ ! -f "$RECOVERY_ZIP" ]; then
+                  echo "Error: Recovery image for version $VERSION not found"
+                  echo "Looking for: $RECOVERY_ZIP"
+                  echo ""
+                  echo "Available recovery images:"
+                  ls -1 "$INSTALL_DIR"/*_emmc_recovery.zip 2>/dev/null || echo "  (none found)"
+                  exit 1
+                fi
+              else
+                # Find latest recovery zip
+                RECOVERY_ZIP=$(find "$INSTALL_DIR" -name '*_emmc_recovery.zip' -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-)
+                if [ -z "$RECOVERY_ZIP" ]; then
+                  echo "Error: No recovery image found. Run 'nix run .#build' first."
+                  exit 1
+                fi
+                # Extract version from filename
+                VERSION=$(basename "$RECOVERY_ZIP" | sed -n 's/.*AuthorityOS_\(.*\)_emmc_recovery.zip/\1/p')
+              fi
+
+              echo "============================================="
+              echo "Flash Recovery Image: $VERSION"
+              echo "============================================="
+              echo "Source: $RECOVERY_ZIP"
+              echo ""
+
+              # Extract to temp directory
+              TEMP_DIR=$(mktemp -d)
+              trap "rm -rf $TEMP_DIR" EXIT
+
+              echo "Extracting recovery image..."
+              unzip -q "$RECOVERY_ZIP" -d "$TEMP_DIR"
+
+              IMG_FILE=$(find "$TEMP_DIR" -name '*.img' | head -1)
+              if [ -z "$IMG_FILE" ]; then
+                echo "Error: No .img file found in recovery zip"
+                exit 1
+              fi
+
+              IMG_SIZE=$(stat -c%s "$IMG_FILE")
+              echo "Image: $(basename "$IMG_FILE") ($(numfmt --to=iec $IMG_SIZE))"
+              echo ""
+
+              # List available block devices (filter for likely SD cards/USB drives)
+              echo "Available devices:"
+              echo ""
+
+              # Build device list with descriptions
+              DEVICES=()
+              i=1
+              while IFS= read -r line; do
+                DEV_NAME=$(echo "$line" | awk '{print $1}')
+                DEV_SIZE=$(echo "$line" | awk '{print $2}')
+                DEV_RM=$(echo "$line" | awk '{print $3}')
+                DEV_MODEL=$(echo "$line" | awk '{print $4}')
+                DEV_TRAN=$(echo "$line" | awk '{print $5}')
+
+                # Build description
+                DESC="$DEV_SIZE"
+                [ -n "$DEV_MODEL" ] && DESC="$DESC - $DEV_MODEL"
+                [ -n "$DEV_TRAN" ] && DESC="$DESC ($DEV_TRAN)"
+                [ "$DEV_RM" = "1" ] && DESC="$DESC [removable]"
+
+                DEVICES+=("$DEV_NAME")
+                printf "  %d) /dev/%-10s %s\n" "$i" "$DEV_NAME" "$DESC"
+                ((i++))
+              done < <(lsblk -d -n -o NAME,SIZE,RM,MODEL,TRAN 2>/dev/null | grep -E '^(sd|mmcblk)')
+
+              if [ ''${#DEVICES[@]} -eq 0 ]; then
+                echo "  No suitable devices found (SD card or USB drive)"
+                echo ""
+                echo "Insert an SD card and try again."
+                exit 1
+              fi
+
+              echo ""
+              echo "  0) Cancel"
+              echo ""
+
+              # Prompt for device selection
+              read -p "Select device number: " SELECTION
+
+              if [ -z "$SELECTION" ] || [ "$SELECTION" = "0" ]; then
+                echo "Cancelled."
+                exit 0
+              fi
+
+              # Validate selection is a number
+              if ! [[ "$SELECTION" =~ ^[0-9]+$ ]]; then
+                echo "Invalid selection."
+                exit 1
+              fi
+
+              # Get device from selection (1-indexed)
+              INDEX=$((SELECTION - 1))
+              if [ "$INDEX" -lt 0 ] || [ "$INDEX" -ge ''${#DEVICES[@]} ]; then
+                echo "Invalid selection: $SELECTION"
+                exit 1
+              fi
+
+              DEVICE="''${DEVICES[$INDEX]}"
+
+              # Validate device exists
+              if [ ! -b "/dev/$DEVICE" ]; then
+                echo "Error: /dev/$DEVICE is not a valid block device"
+                exit 1
+              fi
+
+              # Safety check - don't flash nvme or system disk
+              if echo "$DEVICE" | grep -qE '^(nvme|loop)'; then
+                echo "Error: Refusing to flash $DEVICE (system disk protection)"
+                exit 1
+              fi
+
+              # Final confirmation
+              echo ""
+              echo "WARNING: This will ERASE ALL DATA on /dev/$DEVICE"
+              echo ""
+              lsblk "/dev/$DEVICE"
+              echo ""
+              read -p "Type 'yes' to confirm: " CONFIRM
+
+              if [ "$CONFIRM" != "yes" ]; then
+                echo "Aborted."
+                exit 1
+              fi
+
+              # Unmount any mounted partitions
+              for part in /dev/''${DEVICE}*; do
+                if mountpoint -q "$part" 2>/dev/null || mount | grep -q "$part"; then
+                  echo "Unmounting $part..."
+                  sudo umount "$part" 2>/dev/null || true
+                fi
+              done
+
+              # Flash with dd
+              echo ""
+              echo "Flashing to /dev/$DEVICE..."
+              echo ""
+
+              sudo dd if="$IMG_FILE" of="/dev/$DEVICE" bs=4M status=progress conv=fsync
+
+              echo ""
+              echo "============================================="
+              echo "Flash complete!"
+              echo "============================================="
+              echo ""
+              echo "Safely eject the SD card before removing."
             '');
           };
         };
