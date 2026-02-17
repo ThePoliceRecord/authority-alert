@@ -1,0 +1,5 @@
+config TARGET_PACKAGE_CVITRACER
+	bool "Target package cvitracer"
+	default n
+	help
+	  target cvitracer
