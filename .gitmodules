@@ -1,8 +1,103 @@
-[submodule "reCamera-OS"]
-	path = reCamera-OS
-	url = git@github.com:ThePoliceRecord/authority-alert-OS.git
-	branch = sg200x-reCamera
-[submodule "sscma-example-sg200x"]
-	path = sscma-example-sg200x
-	url = git@github.com:ThePoliceRecord/sscma-example-sg200x.git
+[submodule "reCamera-OS/host-tools"]
+	path = reCamera-OS/host-tools
+	url = https://github.com/sophgo/host-tools.git
+	branch = master
+[submodule "reCamera-OS/build"]
+	path = reCamera-OS/build
+	url = https://github.com/sophgo/build.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/freertos"]
+	path = reCamera-OS/freertos
+	url = https://github.com/sophgo/freertos.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/FreeRTOS-Kernel"]
+	path = reCamera-OS/FreeRTOS-Kernel
+	url = https://github.com/sophgo/FreeRTOS-Kernel.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/Lab-Project-FreeRTOS-POSIX"]
+	path = reCamera-OS/Lab-Project-FreeRTOS-POSIX
+	url = https://github.com/sophgo/Lab-Project-FreeRTOS-POSIX.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/fsbl"]
+	path = reCamera-OS/fsbl
+	url = https://github.com/sophgo/fsbl.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/opensbi"]
+	path = reCamera-OS/opensbi
+	url = https://github.com/sophgo/opensbi.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/u-boot-2021.10"]
+	path = reCamera-OS/u-boot-2021.10
+	url = https://github.com/sophgo/u-boot-2021.10.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/linux_5.10"]
+	path = reCamera-OS/linux_5.10
+	url = https://github.com/sophgo/linux_5.10.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/osdrv"]
+	path = reCamera-OS/osdrv
+	url = https://github.com/sophgo/osdrv.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/ramdisk"]
+	path = reCamera-OS/ramdisk
+	url = https://github.com/sophgo/ramdisk.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/oss"]
+	path = reCamera-OS/oss
+	url = https://github.com/sophgo/oss.git
+	branch = master
+[submodule "reCamera-OS/cvi_rtsp"]
+	path = reCamera-OS/cvi_rtsp
+	url = https://github.com/sophgo/cvi_rtsp.git
+	branch = master
+[submodule "reCamera-OS/cvi_mpi"]
+	path = reCamera-OS/cvi_mpi
+	url = https://github.com/sophgo/cvi_mpi.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/isp_tuning"]
+	path = reCamera-OS/isp_tuning
+	url = https://github.com/sophgo/isp_tuning.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/SensorSupportList"]
+	path = reCamera-OS/SensorSupportList
+	url = https://github.com/sophgo/SensorSupportList.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/cvibuilder"]
+	path = reCamera-OS/cvibuilder
+	url = https://github.com/sophgo/cvibuilder.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/cvikernel"]
+	path = reCamera-OS/cvikernel
+	url = https://github.com/sophgo/cvikernel.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/cviruntime"]
+	path = reCamera-OS/cviruntime
+	url = https://github.com/sophgo/cviruntime.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/cvimath"]
+	path = reCamera-OS/cvimath
+	url = https://github.com/sophgo/cvimath.git
+	branch = sg200x-dev
+[submodule "reCamera-OS/flatbuffers"]
+	path = reCamera-OS/flatbuffers
+	url = https://github.com/sophgo/flatbuffers.git
+	branch = master
+[submodule "reCamera-OS/cnpy"]
+	path = reCamera-OS/cnpy
+	url = https://github.com/sophgo/cnpy.git
+	branch = tpu
+[submodule "reCamera-OS/buildroot-2021.05"]
+	path = reCamera-OS/buildroot-2021.05
+	url = https://github.com/ThePoliceRecord/authority-alert-buildroot-2021.05.git
 	branch = development
+[submodule "reCamera-OS/tdl_sdk"]
+	path = reCamera-OS/tdl_sdk
+	url = https://github.com/sophgo/tdl_sdk.git
+	branch = master
+[submodule "reCamera-OS/ive"]
+	path = reCamera-OS/ive
+	url = https://github.com/sophgo/ive.git
+	branch = master
+[submodule "sscma-example-sg200x/components/sscma-micro/sscma-micro"]
+	path = sscma-example-sg200x/components/sscma-micro/sscma-micro
+	url = https://github.com/Seeed-Studio/SSCMA-Micro

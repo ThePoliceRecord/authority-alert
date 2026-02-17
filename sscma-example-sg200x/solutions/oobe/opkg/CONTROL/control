@@ -1,0 +1,9 @@
+Package: oobe
+Version: 0.1.0
+Architecture: riscv64
+Maintainer: Seeed Studio <techsupport@seeed.io>
+Section: admin
+Priority: optional
+Description: OOBE web wizard service for reCamera
+ A small HTTP server that serves the OOBE web UI and provides minimal health endpoints.
+

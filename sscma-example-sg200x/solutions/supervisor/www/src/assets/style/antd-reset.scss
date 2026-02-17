@@ -1,0 +1,290 @@
+:root:root {
+	/* Brand primary color for antd-mobile */
+	--adm-color-primary: #2328bb;
+	--adm-color-success: #9be564;
+	--adm-color-warning: #f3b61f;
+	--adm-color-danger: #730001;
+	--adm-color-white: #fdfffc;
+	--adm-color-text: #2a2a27;
+	--adm-color-text-secondary: #5e747f;
+	--adm-color-weak: #7f7f76;
+	--adm-color-light: #e0e0e0;
+	--adm-color-border: #e0e0e0;
+	--adm-color-background: #f1f3f5;
+	--adm-font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* List styling */
+.adm-list-default .adm-list-body {
+	border-top: 0;
+}
+
+/* Form item styling */
+.adm-form-item.adm-form-item-vertical .adm-form-item-label {
+	font-size: 16px;
+	color: var(--adm-color-text);
+	font-weight: 500;
+}
+
+.adm-list-item {
+	padding-left: 0;
+}
+
+.adm-input-element {
+	font-size: 16px;
+}
+
+.adm-list-item-content {
+	padding-right: 0;
+	position: relative;
+}
+
+.adm-list-item-content-extra {
+	position: absolute;
+	right: 30px;
+	top: 26px;
+}
+
+/* Text area styling */
+.adm-text-area {
+	border: 1px solid var(--adm-color-border);
+	padding: 6px 8px;
+	border-radius: 6px;
+	transition: border-color 150ms ease;
+}
+
+.adm-text-area:focus-within {
+	border-color: var(--adm-color-primary);
+}
+
+.adm-form-item.adm-form-item-vertical .adm-form-item-label {
+	margin-bottom: 10px;
+}
+
+.adm-text-area-element {
+	font-size: 16px;
+}
+
+.border-b-0 {
+	.adm-list-default .adm-list-body {
+		border-top: 0;
+		border-bottom: 0;
+	}
+}
+
+/* Button styling */
+.adm-button {
+	border-radius: 6px;
+	font-weight: 500;
+	transition: all 150ms ease;
+}
+
+.adm-button-primary {
+	background: var(--adm-color-primary);
+	border-color: var(--adm-color-primary);
+}
+
+.adm-button-primary:active {
+	background: #0065a3;
+	border-color: #0065a3;
+}
+
+.adm-button-danger {
+	background: #FFC7C7;
+	color: #730001;
+	border: transparent;
+}
+
+.adm-button-danger:active {
+	background: #ffb3b3;
+}
+
+.adm-button-success {
+	background: var(--adm-color-success);
+	color: #2a2a27;
+	border-color: var(--adm-color-success);
+}
+
+/* Input styling */
+.adm-input {
+	border-radius: 6px;
+}
+
+.adm-input-element {
+	color: var(--adm-color-text);
+}
+
+/* Popup styling */
+.adm-popup {
+	--adm-popup-z-index: 1000;
+}
+
+.adm-popup-body {
+	background: var(--adm-color-white);
+}
+
+/* Modal styling */
+.adm-modal {
+	--adm-modal-z-index: 1000;
+}
+
+.adm-modal-content {
+	border-radius: 12px;
+}
+
+.adm-modal-title {
+	font-weight: 600;
+	color: var(--adm-color-text);
+}
+
+/* Toast styling */
+.adm-toast-main {
+	border-radius: 8px;
+}
+
+/* Switch styling */
+.adm-switch-checked {
+	background: var(--adm-color-primary);
+}
+
+/* Tabs styling */
+.adm-tabs-tab-active {
+	color: var(--adm-color-primary);
+}
+
+.adm-tabs-tab-line {
+	background: var(--adm-color-primary);
+}
+
+/* Card styling */
+.adm-card {
+	border-radius: 8px;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Selector styling */
+.adm-selector-item-active {
+	background: rgba(35, 40, 187, 0.1);
+	border-color: var(--adm-color-primary);
+}
+
+/* Checkbox styling */
+.adm-checkbox-checked .adm-checkbox-icon {
+	background: var(--adm-color-primary);
+	border-color: var(--adm-color-primary);
+}
+
+/* Radio styling */
+.adm-radio-checked .adm-radio-icon {
+	background: var(--adm-color-primary);
+	border-color: var(--adm-color-primary);
+}
+
+/* Progress bar styling */
+.adm-progress-bar-fill {
+	background: var(--adm-color-primary);
+}
+
+/* Slider styling */
+.adm-slider-fill {
+	background: var(--adm-color-primary);
+}
+
+.adm-slider-thumb {
+	border-color: var(--adm-color-primary);
+}
+
+/* Loading styling */
+.adm-loading {
+	color: var(--adm-color-primary);
+}
+
+/* Pull to refresh styling */
+.adm-pull-to-refresh-head-content {
+	color: var(--adm-color-primary);
+}
+
+/* Stepper styling */
+.adm-stepper-input {
+	border-color: var(--adm-color-border);
+}
+
+/* Search bar styling */
+.adm-search-bar-input-box {
+	border-radius: 20px;
+	background: var(--adm-color-background);
+}
+
+/* Nav bar styling */
+.adm-nav-bar {
+	background: var(--adm-color-primary);
+	color: white;
+}
+
+.adm-nav-bar-back-arrow {
+	color: white;
+}
+
+/* Tag styling */
+.adm-tag-primary {
+	background: var(--adm-color-primary);
+}
+
+.adm-tag-success {
+	background: var(--adm-color-success);
+	color: #2a2a27;
+}
+
+.adm-tag-warning {
+	background: var(--adm-color-warning);
+	color: #2a2a27;
+}
+
+.adm-tag-danger {
+	background: var(--adm-color-danger);
+}
+
+/* Badge styling */
+.adm-badge-content {
+	background: var(--adm-color-danger);
+}
+
+/* Notice bar styling */
+.adm-notice-bar-info {
+	background: rgba(35, 40, 187, 0.1);
+	color: var(--adm-color-primary);
+}
+
+/* Floating bubble styling */
+.adm-floating-bubble {
+	background: var(--adm-color-primary);
+}
+
+/* Action sheet styling */
+.adm-action-sheet-button-item-name {
+	color: var(--adm-color-text);
+}
+
+.adm-action-sheet-button-item-danger .adm-action-sheet-button-item-name {
+	color: var(--adm-color-danger);
+}
+
+/* Dialog styling */
+.adm-dialog-button-primary {
+	color: var(--adm-color-primary);
+}
+
+/* Picker styling */
+.adm-picker-header-button {
+	color: var(--adm-color-primary);
+}
+
+/* Calendar styling */
+.adm-calendar-cell-selected {
+	background: var(--adm-color-primary);
+}
+
+/* Cascader styling */
+.adm-cascader-view-item-active {
+	color: var(--adm-color-primary);
+}

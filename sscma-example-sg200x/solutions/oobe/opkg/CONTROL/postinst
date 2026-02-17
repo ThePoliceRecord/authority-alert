@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+
+INIT_SCRIPT=/etc/init.d/S94oobe
+
+echo "Installing OOBE..."
+
+if [ -x "$INIT_SCRIPT" ]; then
+  $INIT_SCRIPT stop || true
+  sleep 1
+  $INIT_SCRIPT start || true
+else
+  killall oobe 2>/dev/null || true
+  /usr/local/bin/oobe >/dev/null 2>&1 &
+fi
+
+echo "OOBE installation complete."
+exit 0
+

@@ -1,0 +1,13 @@
+.vscode
+build/
+install/
+*.a
+*.so
+
+# SDK (large, download separately)
+temp/
+
+# Nix
+.direnv/
+result
+result-*

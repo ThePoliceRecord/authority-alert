@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+    <remote name="origin" fetch="git@github.com:sophgo/" review="git@github.com:sophgo/"/>
+    <default revision="sg200x-dev" remote="origin" sync-j="4"/>
+
+    <project name="host-tools" revision="master"/>
+    <project name="build"/>
+    <project name="freertos"/>
+    <project name="FreeRTOS-Kernel"/>
+    <project name="Lab-Project-FreeRTOS-POSIX"/>
+    <project name="fsbl"/>
+    <project name="opensbi"/>
+    <project name="u-boot-2021.10"/>
+    <project name="linux_5.10"/>
+    <project name="osdrv"/>
+    <project name="ramdisk"/>
+    <project name="oss" revision="master"/>
+    <project name="cvi_rtsp"/>
+    <project name="cvi_mpi"/>
+    <project name="isp_tuning"/>
+    <project name="SensorSupportList"/>
+    <project name="cvibuilder"/>
+    <project name="cvikernel"/>
+    <project name="cviruntime"/>
+    <project name="cvimath"/>
+    <project name="flatbuffers" revision="master"/>
+    <project name="cnpy" revision="tpu"/>
+    <project name="buildroot-2021.05"/>
+    <project name="tdl_sdk" revision="master"/>
+    <project name="ive"/>
+</manifest>

@@ -1,0 +1,29 @@
+cmake_minimum_required(VERSION 3.5.0)
+
+project(camera-streamer C CXX)
+
+get_filename_component(PROJECT_DIR ${CMAKE_CURRENT_LIST_DIR} ABSOLUTE)
+message(STATUS "PROJECT_DIR: ${PROJECT_DIR}")
+
+get_filename_component(ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/../../" ABSOLUTE)
+message(STATUS "ROOT_DIR: ${ROOT_DIR}")
+
+# Ensure PROJECT_NAME is set for build.cmake
+set(PROJECT_NAME "camera-streamer")
+message(STATUS "Building project: ${PROJECT_NAME}")
+
+include(${ROOT_DIR}/cmake/toolchain-riscv64-linux-musl-x86_64.cmake)
+include(${ROOT_DIR}/cmake/project.cmake)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Add components (use paths relative to repo root)
+add_subdirectory(${ROOT_DIR}/components/sophgo ${CMAKE_BINARY_DIR}/sophgo)
+add_subdirectory(${ROOT_DIR}/components/mongoose ${CMAKE_BINARY_DIR}/mongoose)
+
+# Add main application
+add_subdirectory(main)
+
+# Packaging
+include(${ROOT_DIR}/cmake/package.cmake)

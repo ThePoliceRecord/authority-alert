@@ -1,0 +1,3234 @@
+openapi: 3.0.3
+info:
+  title: Supervisor API
+  version: 1.0.0
+  description: |
+    Comprehensive API documentation for the reCamera Supervisor service.
+    
+    The Supervisor API provides device management, network configuration, file operations,
+    user authentication, camera streaming, and system administration capabilities for
+    reCamera devices running on SG200x platforms.
+    
+    ## Key Features
+    - Device information and configuration management
+    - WiFi and network connectivity control
+    - File system operations with local and SD card storage
+    - User authentication and SSH key management
+    - Camera streaming and channel management
+    - System updates and OTA package management
+    - LED control and hardware configuration
+    - Recording management and analytics
+    - Platform integration for Authority Alert
+    
+    ## Authentication
+    Most endpoints require JWT-based authentication. Obtain a token via the `/api/userMgr/login` endpoint
+    and include it in the `Authorization` header as `Bearer <token>`.
+    
+    ## Versioning
+    The API uses path-based versioning. Current version is v1, reflected in paths like `/api/v1/...`.
+    Legacy endpoints without version prefix are maintained for backward compatibility.
+    
+  contact:
+    name: reCamera Support
+    url: https://github.com/Seeed-Studio/sscma-example-sg200x
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://{device-ip}
+    description: Device HTTPS endpoint (default port 443)
+    variables:
+      device-ip:
+        default: 192.168.1.100
+        description: IP address or hostname of the reCamera device
+  - url: http://{device-ip}
+    description: Device HTTP endpoint (redirects to HTTPS except for AP clients)
+    variables:
+      device-ip:
+        default: 192.168.16.1
+        description: IP address of the reCamera device (AP mode default)
+
+tags:
+  - name: Authentication
+    description: User authentication and session management
+  - name: Device Management
+    description: Device information, configuration, and system operations
+  - name: Network
+    description: WiFi and network connectivity management
+  - name: File Management
+    description: File system operations for local and SD card storage
+  - name: Camera
+    description: Camera streaming and channel configuration
+  - name: System
+    description: System updates, power management, and maintenance
+  - name: User Management
+    description: User accounts, passwords, and SSH key management
+  - name: LED Control
+    description: LED configuration and status indicators
+  - name: Recording
+    description: Video recording configuration and management
+  - name: Platform Integration
+    description: Authority Alert platform registration and communication
+  - name: QR Code
+    description: QR code scanning for device provisioning
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token obtained from the login endpoint. Include in Authorization header as:
+        `Authorization: Bearer <token>`
+
+  schemas:
+    # Common Response Schemas
+    SuccessResponse:
+      type: object
+      required:
+        - code
+        - msg
+      properties:
+        code:
+          type: integer
+          example: 0
+          description: Status code (0 for success)
+        msg:
+          type: string
+          example: "Success"
+          description: Human-readable message
+        data:
+          type: object
+          description: Response payload (varies by endpoint)
+          additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - msg
+      properties:
+        code:
+          type: integer
+          example: -1
+          description: Error code (negative for errors)
+        msg:
+          type: string
+          example: "Error message"
+          description: Human-readable error message
+        data:
+          type: object
+          description: Additional error details
+          additionalProperties: true
+
+    # Authentication Schemas
+    LoginRequest:
+      type: object
+      required:
+        - userName
+        - password
+      properties:
+        userName:
+          type: string
+          example: "recamera"
+          description: Username for authentication
+          minLength: 1
+          maxLength: 32
+        password:
+          type: string
+          format: password
+          example: "password123"
+          description: User password
+          minLength: 8
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          description: JWT authentication token
+        retryCount:
+          type: integer
+          example: 0
+          description: Number of failed login attempts
+
+    # User Management Schemas
+    UserInfo:
+      type: object
+      properties:
+        userName:
+          type: string
+          example: "recamera"
+        sshEnabled:
+          type: boolean
+          example: true
+          description: Whether SSH access is enabled
+        sshkeyList:
+          type: array
+          items:
+            $ref: '#/components/schemas/SSHKey'
+
+    SSHKey:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "1"
+          description: Unique identifier for the SSH key
+        type:
+          type: string
+          example: "ssh-rsa"
+          description: SSH key type
+        value:
+          type: string
+          example: "AAAAB3Nza...truncated...xyz"
+          description: Truncated public key value
+        name:
+          type: string
+          example: "user@hostname"
+          description: Key comment/name
+        addTime:
+          type: string
+          format: date-time
+          description: When the key was added
+
+    UpdatePasswordRequest:
+      type: object
+      required:
+        - oldPassword
+        - newPassword
+      properties:
+        oldPassword:
+          type: string
+          format: password
+          description: Current password
+        newPassword:
+          type: string
+          format: password
+          description: New password (minimum 8 characters)
+          minLength: 8
+
+    SetSSHStatusRequest:
+      type: object
+      properties:
+        enable:
+          type: boolean
+          description: Enable or disable SSH
+        enabled:
+          type: boolean
+          description: Alternative field name for backwards compatibility
+
+    AddSSHKeyRequest:
+      type: object
+      required:
+        - value
+      properties:
+        key:
+          type: string
+          description: SSH public key (legacy field)
+        value:
+          type: string
+          description: SSH public key
+          example: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC..."
+        name:
+          type: string
+          description: Key name/comment
+          example: "user@hostname"
+        time:
+          type: string
+          format: date-time
+          description: Optional timestamp
+
+    DeleteSSHKeyRequest:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: SSH key ID to delete
+          example: "1"
+
+    # Device Management Schemas
+    DeviceInfo:
+      type: object
+      properties:
+        SN:
+          type: string
+          example: "SG200X-ABC123"
+          description: Device serial number
+        Type:
+          type: string
+          example: "reCamera"
+          description: Device type/model
+        OSVersion:
+          type: string
+          example: "1.0.0"
+          description: Operating system version
+        deviceName:
+          type: string
+          example: "recamera-001"
+          description: User-configured device name
+        uptime:
+          type: integer
+          example: 86400
+          description: System uptime in seconds
+
+    UpdateDeviceNameRequest:
+      type: object
+      required:
+        - deviceName
+      properties:
+        deviceName:
+          type: string
+          example: "recamera-001"
+          description: New device name (alphanumeric, hyphens, underscores only)
+          pattern: '^[a-zA-Z0-9_-]{1,63}$'
+          maxLength: 63
+
+    SetPowerRequest:
+      type: object
+      required:
+        - mode
+      properties:
+        mode:
+          type: integer
+          enum: [0, 1, 2]
+          description: |
+            Power mode:
+            - 0: Shutdown
+            - 1: Reboot
+            - 2: Suspend
+          example: 1
+
+    ModelInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "yolo11n_detection_cv181x_int8.cvimodel"
+        path:
+          type: string
+          example: "/usr/share/supervisor/models/yolo11n_detection_cv181x_int8.cvimodel"
+        size:
+          type: integer
+          example: 5242880
+          description: File size in bytes
+        modified:
+          type: integer
+          example: 1704067200
+          description: Last modified timestamp (Unix epoch)
+
+    # Network Schemas
+    WiFiInfo:
+      type: object
+      properties:
+        ssid:
+          type: string
+          example: "MyNetwork"
+        bssid:
+          type: string
+          example: "00:11:22:33:44:55"
+        status:
+          type: integer
+          enum: [1, 2, 3]
+          description: |
+            Connection status:
+            - 1: Disconnected
+            - 2: Connecting
+            - 3: Connected
+        ip:
+          type: string
+          example: "192.168.1.100"
+        macAddress:
+          type: string
+          example: "AA:BB:CC:DD:EE:FF"
+        ipAssignment:
+          type: integer
+          example: 1
+          description: IP assignment method (1 = DHCP)
+        subnetMask:
+          type: string
+          example: "255.255.255.0"
+        auth:
+          type: integer
+          enum: [0, 1]
+          description: |
+            Authentication type:
+            - 0: Open
+            - 1: Secure (WPA/WPA2)
+        signal:
+          type: integer
+          example: -50
+          description: Signal strength in dBm
+        connectedStatus:
+          type: integer
+          enum: [0, 1]
+          description: |
+            - 0: Not previously connected
+            - 1: Previously connected/saved
+
+    WiFiListResponse:
+      type: object
+      properties:
+        wifiEnable:
+          type: integer
+          enum: [0, 1, 2]
+          description: |
+            WiFi status:
+            - 0: Has WiFi, not enabled
+            - 1: Has WiFi, enabled
+            - 2: No WiFi hardware
+        etherInfo:
+          $ref: '#/components/schemas/WiFiInfo'
+        connectedWifiInfoList:
+          type: array
+          items:
+            $ref: '#/components/schemas/WiFiInfo'
+          description: Currently connected and saved networks
+        wifiInfoList:
+          type: array
+          items:
+            $ref: '#/components/schemas/WiFiInfo'
+          description: Available networks from scan
+
+    ConnectWiFiRequest:
+      type: object
+      required:
+        - ssid
+      properties:
+        id:
+          type: integer
+          description: Network ID (for saved networks)
+        ssid:
+          type: string
+          example: "MyNetwork"
+        password:
+          type: string
+          format: password
+          description: Network password (required for secure networks)
+        security:
+          type: string
+          example: "WPA2"
+          description: Security type
+
+    DisconnectWiFiRequest:
+      type: object
+      required:
+        - ssid
+      properties:
+        ssid:
+          type: string
+          example: "MyNetwork"
+
+    ForgetWiFiRequest:
+      type: object
+      required:
+        - ssid
+      properties:
+        ssid:
+          type: string
+          example: "MyNetwork"
+
+    SwitchWiFiRequest:
+      type: object
+      required:
+        - mode
+      properties:
+        mode:
+          type: integer
+          enum: [0, 1]
+          description: |
+            - 0: Disable WiFi
+            - 1: Enable WiFi
+
+    # File Management Schemas
+    FileListResponse:
+      type: object
+      properties:
+        path:
+          type: string
+          example: "recordings"
+        storage:
+          type: string
+          enum: [local, sd]
+          example: "local"
+        directories:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileItem'
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileItem'
+        total:
+          type: integer
+          example: 10737418240
+          description: Total storage space in bytes (root path only)
+        free:
+          type: integer
+          example: 5368709120
+          description: Free storage space in bytes (root path only)
+        used:
+          type: integer
+          example: 5368709120
+          description: Used storage space in bytes (root path only)
+
+    FileItem:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "video.mp4"
+        type:
+          type: string
+          enum: [file, directory]
+        size:
+          type: integer
+          example: 1048576
+          description: File size in bytes (0 for directories)
+        modified:
+          type: integer
+          example: 1704067200
+          description: Last modified timestamp (Unix epoch)
+
+    MkdirRequest:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          type: string
+          example: "recordings/2024-01"
+        storage:
+          type: string
+          enum: [local, sd]
+          default: local
+
+    RemoveRequest:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          type: string
+          example: "recordings/old-video.mp4"
+        storage:
+          type: string
+          enum: [local, sd]
+          default: local
+
+    RenameRequest:
+      type: object
+      required:
+        - old_path
+        - new_path
+      properties:
+        old_path:
+          type: string
+          example: "video.mp4"
+        new_path:
+          type: string
+          example: "video-renamed.mp4"
+        storage:
+          type: string
+          enum: [local, sd]
+          default: local
+
+    StorageInfo:
+      type: object
+      properties:
+        storage:
+          type: string
+          enum: [local, sd]
+        total:
+          type: integer
+          example: 10737418240
+          description: Total storage space in bytes
+        used:
+          type: integer
+          example: 5368709120
+          description: Used storage space in bytes
+        available:
+          type: integer
+          example: 5368709120
+          description: Available storage space in bytes
+        mounted:
+          type: boolean
+          example: true
+
+    # Camera Schemas
+    ChannelInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 0
+        name:
+          type: string
+          example: "High Resolution"
+        resolution:
+          type: string
+          example: "1920x1080"
+        fps:
+          type: integer
+          example: 30
+        bitrate:
+          type: string
+          example: "2-4 Mbps"
+        codec:
+          type: string
+          example: "H.264"
+        use_case:
+          type: string
+          example: "Recording, archival, high-quality streaming"
+        websocket_url:
+          type: string
+          example: "ws://192.168.1.100:8765/?channel=0"
+        shm_path:
+          type: string
+          example: "/video_stream_ch0"
+        active:
+          type: boolean
+          example: true
+
+    ChannelsResponse:
+      type: object
+      properties:
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelInfo'
+        default_channel:
+          type: integer
+          example: 1
+          description: Default channel ID for viewing
+
+    # System Update Schemas
+    UpdateChannelRequest:
+      type: object
+      required:
+        - channel
+      properties:
+        channel:
+          type: integer
+          enum: [0, 1, 2]
+          description: |
+            Update channel:
+            - 0: Stable
+            - 1: Beta
+            - 2: Custom
+        url:
+          type: string
+          format: uri
+          description: Custom OTA server URL (required for channel 2)
+        serverUrl:
+          type: string
+          format: uri
+          description: Alternative field name for custom URL
+
+    UpdateVersion:
+      type: object
+      properties:
+        osName:
+          type: string
+          example: "reCamera-OS"
+        osVersion:
+          type: string
+          example: "1.1.0"
+        status:
+          type: string
+          enum: [available, checking, downloading, installing, idle]
+          example: "available"
+        releaseNotes:
+          type: string
+          description: Update release notes
+
+    UpdateProgress:
+      type: object
+      properties:
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 45
+          description: Update progress percentage
+        status:
+          type: string
+          enum: [idle, checking, downloading, installing, complete, error]
+          example: "downloading"
+        message:
+          type: string
+          example: "Downloading update package..."
+
+    UploadedPackageInfo:
+      type: object
+      properties:
+        exists:
+          type: boolean
+          example: true
+        fileName:
+          type: string
+          example: "recamera_1.1.0_ota.zip"
+        checksum:
+          type: string
+          example: "a1b2c3d4e5f6..."
+        osName:
+          type: string
+          example: "reCamera-OS"
+        version:
+          type: string
+          example: "1.1.0"
+        size:
+          type: integer
+          example: 524288000
+        packageType:
+          type: string
+          enum: [ota_zip, swu, upgrade_zip]
+          example: "ota_zip"
+
+    # LED Control Schemas
+    LEDInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "led0"
+        brightness:
+          type: integer
+          minimum: 0
+          maximum: 255
+          example: 128
+        trigger:
+          type: string
+          example: "none"
+        available_triggers:
+          type: array
+          items:
+            type: string
+          example: ["none", "heartbeat", "timer"]
+
+    SetLEDRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "led0"
+        brightness:
+          type: integer
+          minimum: 0
+          maximum: 255
+        trigger:
+          type: string
+          example: "heartbeat"
+
+    # Recording Schemas
+    RecordingConfig:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          example: true
+        storage:
+          type: string
+          enum: [local, sd]
+          default: sd
+        max_duration:
+          type: integer
+          example: 300
+          description: Maximum recording duration in seconds
+        format:
+          type: string
+          enum: [mp4, mkv]
+          default: mp4
+
+    # Analytics Schemas
+    AnalyticsConfig:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          example: true
+          description: Enable or disable analytics collection
+
+    # QR Code Schemas
+    QRScanRequest:
+      type: object
+      properties:
+        timeout:
+          type: integer
+          example: 30
+          description: Scan timeout in seconds
+
+    QRScanStatus:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "scan-123"
+        status:
+          type: string
+          enum: [scanning, success, timeout, error]
+        data:
+          type: string
+          description: Decoded QR code data (when status is success)
+        error:
+          type: string
+          description: Error message (when status is error)
+
+    # Timezone Schemas
+    SetTimezoneRequest:
+      type: object
+      required:
+        - timezone
+      properties:
+        timezone:
+          type: string
+          example: "America/New_York"
+          description: IANA timezone identifier
+
+    SetTimestampRequest:
+      type: object
+      required:
+        - timestamp
+      properties:
+        timestamp:
+          type: integer
+          example: 1704067200
+          description: Unix timestamp in seconds
+
+paths:
+  # Authentication Endpoints
+  /api/userMgr/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: |
+        Authenticate a user and obtain a JWT token for subsequent API requests.
+        
+        **Use Cases:**
+        - Initial device access
+        - Session establishment
+        - Token refresh after expiration
+        
+        **Business Logic:**
+        - Validates credentials against system user database
+        - Generates JWT token with 24-hour expiration
+        - Tracks failed login attempts for security
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              default:
+                value:
+                  userName: "recamera"
+                  password: "password123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponse'
+              examples:
+                success:
+                  value:
+                    code: 0
+                    msg: "Success"
+                    data:
+                      token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_credentials:
+                  value:
+                    code: -1
+                    msg: "Authentication failed"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # User Management Endpoints
+  /api/userMgr/queryUserInfo:
+    get:
+      tags:
+        - User Management
+      summary: Get user information
+      description: |
+        Retrieve information about the authenticated user including SSH status and keys.
+        
+        **Use Cases:**
+        - Display user profile
+        - Check SSH configuration
+        - Verify first login status
+      operationId: queryUserInfo
+      responses:
+        '200':
+          description: User information retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserInfo'
+
+  /api/userMgr/updatePassword:
+    post:
+      tags:
+        - User Management
+      summary: Update user password
+      description: |
+        Change the user's password. Requires current password for verification.
+        
+        **Use Cases:**
+        - Regular password changes
+        - Security compliance
+        - Password rotation
+        
+        **Business Logic:**
+        - Requires authentication via JWT token
+        - Validates old password before allowing change
+        - Enforces minimum 8-character password length
+        - Uses system passwd command for secure password update
+      operationId: updatePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePasswordRequest'
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request or password requirements not met
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Current password incorrect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/userMgr/setSShStatus:
+    post:
+      tags:
+        - User Management
+      summary: Enable or disable SSH
+      description: |
+        Control SSH server status on the device.
+        
+        **Use Cases:**
+        - Enable remote SSH access
+        - Disable SSH for security
+        - Troubleshooting and maintenance
+        
+        **Business Logic:**
+        - Starts/stops Dropbear SSH server
+        - Persists setting across reboots
+        - Supports both SysV init and systemd
+      operationId: setSSHStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetSSHStatusRequest'
+      responses:
+        '200':
+          description: SSH status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /api/userMgr/addSShkey:
+    post:
+      tags:
+        - User Management
+      summary: Add SSH public key
+      description: |
+        Add an SSH public key to the user's authorized_keys file.
+        
+        **Use Cases:**
+        - Enable passwordless SSH access
+        - Add keys for multiple devices
+        - Team access management
+        
+        **Business Logic:**
+        - Validates SSH key format
+        - Appends to ~/.ssh/authorized_keys
+        - Sets proper file permissions (0600)
+        - Supports RSA, Ed25519, ECDSA key types
+      operationId: addSSHKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddSSHKeyRequest'
+      responses:
+        '200':
+          description: SSH key added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid SSH key format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/userMgr/deleteSShkey:
+    post:
+      tags:
+        - User Management
+      summary: Delete SSH public key
+      description: |
+        Remove an SSH public key from the user's authorized_keys file.
+        
+        **Use Cases:**
+        - Revoke access for lost devices
+        - Remove team member access
+        - Security cleanup
+      operationId: deleteSSHKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteSSHKeyRequest'
+      responses:
+        '200':
+          description: SSH key deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: SSH key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Device Management Endpoints
+  /api/deviceMgr/queryDeviceInfo:
+    get:
+      tags:
+        - Device Management
+      summary: Get device information
+      description: |
+        Retrieve basic device information including serial number, model, and OS version.
+        
+        **Use Cases:**
+        - Device identification
+        - Inventory management
+        - Support diagnostics
+        
+        **Note:** This endpoint does not require authentication to support OOBE flows.
+      operationId: queryDeviceInfo
+      security: []
+      responses:
+        '200':
+          description: Device information retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DeviceInfo'
+
+  /api/deviceMgr/getDeviceInfo:
+    get:
+      tags:
+        - Device Management
+      summary: Get detailed device information
+      description: |
+        Retrieve detailed device information including configuration and status.
+        
+        **Use Cases:**
+        - System monitoring
+        - Configuration review
+        - Troubleshooting
+      operationId: getDeviceInfo
+      responses:
+        '200':
+          description: Detailed device information
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DeviceInfo'
+
+  /api/deviceMgr/updateDeviceName:
+    post:
+      tags:
+        - Device Management
+      summary: Update device name
+      description: |
+        Change the device's hostname/name.
+        
+        **Use Cases:**
+        - Device identification
+        - Network organization
+        - Multi-device deployments
+        
+        **Business Logic:**
+        - Updates hostname and mDNS advertisement
+        - Validates name format (alphanumeric, hyphens, underscores)
+        - Maximum 63 characters per RFC 1123
+        - Regenerates TLS certificate with new name
+      operationId: updateDeviceName
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDeviceNameRequest'
+      responses:
+        '200':
+          description: Device name updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid device name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/deviceMgr/setPower:
+    post:
+      tags:
+        - System
+      summary: Set power mode
+      description: |
+        Control device power state (shutdown, reboot, suspend).
+        
+        **Use Cases:**
+        - Remote device restart
+        - Scheduled maintenance
+        - Power management
+        
+        **Business Logic:**
+        - Sends response before executing power command
+        - 1-second delay before power action
+        - Graceful shutdown with service cleanup
+      operationId: setPower
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPowerRequest'
+      responses:
+        '200':
+          description: Power command accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid power mode
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/deviceMgr/getModelList:
+    get:
+      tags:
+        - Device Management
+      summary: List available AI models
+      description: |
+        Get a list of AI/ML models available on the device.
+        
+        **Use Cases:**
+        - Model management
+        - AI feature configuration
+        - Model inventory
+      operationId: getModelList
+      responses:
+        '200':
+          description: Model list retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          models:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ModelInfo'
+
+  /api/deviceMgr/uploadModel:
+    post:
+      tags:
+        - Device Management
+      summary: Upload AI model
+      description: |
+        Upload a new AI/ML model file to the device.
+        
+        **Use Cases:**
+        - Deploy custom models
+        - Update existing models
+        - Model testing
+        
+        **Business Logic:**
+        - Accepts .cvimodel files
+        - Maximum 100MB file size
+        - Validates model format
+      operationId: uploadModel
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Model file (.cvimodel)
+      responses:
+        '200':
+          description: Model uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid model file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/deviceMgr/factoryReset:
+    post:
+      tags:
+        - System
+      summary: Factory reset device
+      description: |
+        Schedule a factory reset on next reboot.
+        
+        **Use Cases:**
+        - Device decommissioning
+        - Troubleshooting
+        - Resale preparation
+        
+        **Business Logic:**
+        - Sets recovery flag in U-Boot environment
+        - Requires manual reboot to execute
+        - Erases all user data and configuration
+        - Restores default settings
+        
+        **Warning:** This operation cannot be undone.
+      operationId: factoryReset
+      responses:
+        '200':
+          description: Factory reset scheduled
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            example: "scheduled"
+                          message:
+                            type: string
+                            example: "Factory reset scheduled. Please reboot the device to apply."
+
+  /api/deviceMgr/formatSDCard:
+    post:
+      tags:
+        - System
+      summary: Format SD card
+      description: |
+        Format the SD card with exFAT filesystem.
+        
+        **Use Cases:**
+        - SD card initialization
+        - Storage cleanup
+        - Filesystem corruption recovery
+        
+        **Business Logic:**
+        - Unmounts existing partitions
+        - Creates MBR partition table if needed
+        - Formats with exFAT for cross-platform compatibility
+        - Remounts after formatting
+        
+        **Warning:** All data on SD card will be erased.
+      operationId: formatSDCard
+      responses:
+        '200':
+          description: SD card formatted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: SD card not detected or format failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Network Endpoints
+  /api/wifiMgr/getWiFiInfoList:
+    get:
+      tags:
+        - Network
+      summary: Get WiFi network list
+      description: |
+        Retrieve list of available WiFi networks and connection status.
+        
+        **Use Cases:**
+        - Network selection UI
+        - Connection status monitoring
+        - Network troubleshooting
+        
+        **Business Logic:**
+        - Triggers new WiFi scan
+        - Returns cached results immediately
+        - Includes saved networks and scan results
+        - Shows ethernet status
+        - Stops AP mode when connected
+      operationId: getWiFiInfoList
+      responses:
+        '200':
+          description: WiFi information retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/WiFiListResponse'
+
+  /api/wifiMgr/connectWiFi:
+    post:
+      tags:
+        - Network
+      summary: Connect to WiFi network
+      description: |
+        Connect to a WiFi network with provided credentials.
+        
+        **Use Cases:**
+        - Initial network setup
+        - Network switching
+        - Reconnection after disconnect
+        
+        **Business Logic:**
+        - Adds network to wpa_supplicant if new
+        - Enables and selects network
+        - Triggers DHCP client
+        - Returns immediately (connection happens in background)
+        - Scans after 3 seconds to update status
+      operationId: connectWiFi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectWiFiRequest'
+      responses:
+        '200':
+          description: Connection initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/wifiMgr/disconnectWiFi:
+    post:
+      tags:
+        - Network
+      summary: Disconnect from WiFi network
+      description: |
+        Disconnect from the specified WiFi network.
+        
+        **Use Cases:**
+        - Manual disconnect
+        - Network troubleshooting
+        - Switching networks
+      operationId: disconnectWiFi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DisconnectWiFiRequest'
+      responses:
+        '200':
+          description: Disconnection initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /api/wifiMgr/forgetWiFi:
+    post:
+      tags:
+        - Network
+      summary: Forget WiFi network
+      description: |
+        Remove a saved WiFi network from the device.
+        
+        **Use Cases:**
+        - Remove old networks
+        - Security cleanup
+        - Network management
+        
+        **Business Logic:**
+        - Removes network from wpa_supplicant configuration
+        - Disconnects if currently connected
+        - Persists changes across reboots
+      operationId: forgetWiFi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgetWiFiRequest'
+      responses:
+        '200':
+          description: Network forgotten
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /api/wifiMgr/switchWiFi:
+    post:
+      tags:
+        - Network
+      summary: Enable or disable WiFi
+      description: |
+        Control WiFi radio state.
+        
+        **Use Cases:**
+        - Power management
+        - Airplane mode
+        - Troubleshooting
+      operationId: switchWiFi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwitchWiFiRequest'
+      responses:
+        '200':
+          description: WiFi state changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: WiFi not supported
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # File Management Endpoints
+  /api/fileMgr/list:
+    get:
+      tags:
+        - File Management
+      summary: List directory contents
+      description: |
+        List files and directories at the specified path.
+        
+        **Use Cases:**
+        - File browser UI
+        - Recording management
+        - Storage monitoring
+        
+        **Business Logic:**
+        - Supports local and SD card storage
+        - Hides hidden files (starting with .)
+        - Returns storage info for root path
+        - Prevents directory traversal attacks
+      operationId: listFiles
+      parameters:
+        - name: path
+          in: query
+          schema:
+            type: string
+          description: Directory path (relative to storage root)
+        - name: storage
+          in: query
+          schema:
+            type: string
+            enum: [local, sd]
+            default: local
+          description: Storage location
+      responses:
+        '200':
+          description: Directory listing retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FileListResponse'
+        '400':
+          description: Invalid path or storage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/fileMgr/mkdir:
+    post:
+      tags:
+        - File Management
+      summary: Create directory
+      description: |
+        Create a new directory at the specified path.
+        
+        **Use Cases:**
+        - Organize recordings
+        - Create folder structure
+        - Storage management
+      operationId: createDirectory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MkdirRequest'
+      responses:
+        '200':
+          description: Directory created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid path or directory exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/fileMgr/remove:
+    post:
+      tags:
+        - File Management
+      summary: Delete file or directory
+      description: |
+        Delete a file or empty directory.
+        
+        **Use Cases:**
+        - Free up storage space
+        - Remove old recordings
+        - File management
+        
+        **Business Logic:**
+        - Only deletes empty directories
+        - Validates path to prevent system file deletion
+        - Cannot delete hidden files
+      operationId: removeFile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveRequest'
+      responses:
+        '200':
+          description: File or directory removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid path, not found, or directory not empty
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/fileMgr/upload:
+    post:
+      tags:
+        - File Management
+      summary: Upload file
+      description: |
+        Upload one or more files to the specified directory.
+        
+        **Use Cases:**
+        - Upload configuration files
+        - Transfer media files
+        - Backup restoration
+        
+        **Business Logic:**
+        - Supports multiple file upload
+        - Maximum 100MB per file
+        - Supports resumable uploads via offset parameter
+        - Validates filenames to prevent path traversal
+      operationId: uploadFile
+      parameters:
+        - name: path
+          in: query
+          schema:
+            type: string
+          description: Upload directory path
+        - name: storage
+          in: query
+          schema:
+            type: string
+            enum: [local, sd]
+            default: local
+        - name: offset
+          in: query
+          schema:
+            type: integer
+          description: Byte offset for resumable uploads
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '200':
+          description: Upload completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Upload failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/fileMgr/download:
+    get:
+      tags:
+        - File Management
+      summary: Download file
+      description: |
+        Download a file from the device.
+        
+        **Use Cases:**
+        - Download recordings
+        - Backup files
+        - Export configuration
+        
+        **Business Logic:**
+        - Supports HTTP range requests for video seeking
+        - Sets appropriate Content-Type headers
+        - Handles actively recording files
+        - Prevents directory traversal
+      operationId: downloadFile
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema:
+            type: string
+          description: File path
+        - name: storage
+          in: query
+          schema:
+            type: string
+            enum: [local, sd]
+            default: local
+      responses:
+        '200':
+          description: File content
+          headers:
+            Content-Type:
+              schema:
+                type: string
+              description: MIME type of the file
+            Accept-Ranges:
+              schema:
+                type: string
+                example: bytes
+              description: Indicates range request support
+            X-File-Status:
+              schema:
+                type: string
+                enum: [complete, recording]
+              description: Whether file is actively being written
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '206':
+          description: Partial content (range request)
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Invalid path
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/fileMgr/rename:
+    post:
+      tags:
+        - File Management
+      summary: Rename file or directory
+      description: |
+        Rename a file or directory.
+        
+        **Use Cases:**
+        - Organize files
+        - Correct naming mistakes
+        - File management
+      operationId: renameFile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenameRequest'
+      responses:
+        '200':
+          description: Renamed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid paths or destination exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/fileMgr/info:
+    get:
+      tags:
+        - File Management
+      summary: Get file information
+      description: |
+        Get metadata about a file or directory.
+        
+        **Use Cases:**
+        - File properties display
+        - Storage analysis
+        - File validation
+      operationId: getFileInfo
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: storage
+          in: query
+          schema:
+            type: string
+            enum: [local, sd]
+            default: local
+      responses:
+        '200':
+          description: File information retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/fileMgr/storageInfo:
+    get:
+      tags:
+        - File Management
+      summary: Get storage information
+      description: |
+        Get storage capacity and usage information.
+        
+        **Use Cases:**
+        - Storage monitoring
+        - Capacity planning
+        - Low storage warnings
+      operationId: getStorageInfo
+      parameters:
+        - name: storage
+          in: query
+          schema:
+            type: string
+            enum: [local, sd]
+            default: local
+      responses:
+        '200':
+          description: Storage information retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/StorageInfo'
+
+  # Camera Endpoints
+  /api/channels:
+    get:
+      tags:
+        - Camera
+      summary: Get camera channels
+      description: |
+        Get information about available camera streaming channels.
+        
+        **Use Cases:**
+        - Stream selection
+        - Quality configuration
+        - Bandwidth optimization
+        
+        **Channels:**
+        - Channel 0: High Resolution (1920x1080, 30fps) - Recording, archival
+        - Channel 1: Medium Resolution (1280x720, 30fps) - Web viewing (default)
+        - Channel 2: Low Resolution (640x480, 15fps) - AI/ML processing
+      operationId: getChannels
+      responses:
+        '200':
+          description: Channel information retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ChannelsResponse'
+
+  /api/deviceMgr/getCameraWebsocketUrl:
+    get:
+      tags:
+        - Camera
+      summary: Get camera WebSocket URL
+      description: |
+        Get the WebSocket URL for camera streaming (proxied through supervisor).
+        
+        **Use Cases:**
+        - Initialize video player
+        - Stream connection setup
+        - Protocol negotiation
+        
+        **Business Logic:**
+        - Returns supervisor proxy endpoint (not direct camera-streamer)
+        - Uses same protocol as page (ws:// or wss://)
+        - Supervisor relays to localhost:8765
+      operationId: getCameraWebsocketUrl
+      responses:
+        '200':
+          description: WebSocket URL retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          websocketUrl:
+                            type: string
+                            example: "wss://192.168.1.100/ws/camera"
+
+  # System Update Endpoints
+  /api/deviceMgr/updateChannel:
+    post:
+      tags:
+        - System
+      summary: Set update channel
+      description: |
+        Configure the OTA update channel and server URL.
+        
+        **Use Cases:**
+        - Switch between stable/beta releases
+        - Configure custom OTA server
+        - Enterprise deployment
+        
+        **Channels:**
+        - 0: Stable - Production releases
+        - 1: Beta - Pre-release testing
+        - 2: Custom - Custom OTA server URL
+      operationId: updateChannel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateChannelRequest'
+      responses:
+        '200':
+          description: Update channel configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /api/deviceMgr/getSystemUpdateVersion:
+    get:
+      tags:
+        - System
+      summary: Check for updates
+      description: |
+        Check for available system updates.
+        
+        **Use Cases:**
+        - Manual update check
+        - Display available version
+        - Update notification
+        
+        **Business Logic:**
+        - Queries configured OTA server
+        - Caches result for 5 minutes
+        - Returns version.json from OTA server
+      operationId: getSystemUpdateVersion
+      responses:
+        '200':
+          description: Update information retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UpdateVersion'
+
+    post:
+      tags:
+        - System
+      summary: Force update check
+      description: |
+        Force a fresh update check, bypassing cache.
+        
+        **Use Cases:**
+        - Immediate update check
+        - Troubleshooting
+        - After channel change
+      operationId: forceUpdateCheck
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: Update information retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UpdateVersion'
+
+  /api/deviceMgr/getUpdateCheckProgress:
+    get:
+      tags:
+        - System
+      summary: Get update check progress
+      description: |
+        Get progress/status of the update check operation.
+        
+        **Use Cases:**
+        - Progress indicator
+        - Status monitoring
+        - UI feedback
+      operationId: getUpdateCheckProgress
+      responses:
+        '200':
+          description: Update check progress
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UpdateProgress'
+
+  /api/deviceMgr/updateSystem:
+    post:
+      tags:
+        - System
+      summary: Start system update
+      description: |
+        Initiate a system update from the configured OTA server.
+        
+        **Use Cases:**
+        - Apply available updates
+        - Scheduled maintenance
+        - Feature upgrades
+        
+        **Business Logic:**
+        - Downloads update package in background
+        - Verifies checksum
+        - Applies update (A/B partition or SWUpdate)
+        - Reboots automatically on success
+        
+        **Warning:** Device will reboot after successful update.
+      operationId: updateSystem
+      responses:
+        '200':
+          description: Update initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /api/deviceMgr/getUpdateProgress:
+    get:
+      tags:
+        - System
+      summary: Get update progress
+      description: |
+        Get progress of the system update operation.
+        
+        **Use Cases:**
+        - Progress bar
+        - Status monitoring
+        - Error detection
+      operationId: getUpdateProgress
+      responses:
+        '200':
+          description: Update progress
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UpdateProgress'
+
+  /api/deviceMgr/cancelUpdate:
+    post:
+      tags:
+        - System
+      summary: Cancel system update
+      description: |
+        Cancel an in-progress system update.
+        
+        **Use Cases:**
+        - User cancellation
+        - Error recovery
+        - Network issues
+        
+        **Note:** Can only cancel during download phase.
+      operationId: cancelUpdate
+      responses:
+        '200':
+          description: Update cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Cannot cancel at this stage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/deviceMgr/uploadUpdatePackage:
+    post:
+      tags:
+        - System
+      summary: Upload OTA package
+      description: |
+        Upload an OTA update package for manual installation.
+        
+        **Use Cases:**
+        - Offline updates
+        - Custom builds
+        - Testing
+        
+        **Supported Formats:**
+        - *_ota.zip - A/B OTA package
+        - *.swu - SWUpdate bundle
+        - *_swu.zip - Zipped SWUpdate bundle
+        - *_emmc.zip - eMMC upgrade package
+        
+        **Business Logic:**
+        - Maximum 2GB file size
+        - Streams directly to storage (no temp file)
+        - Calculates SHA256 checksum
+        - Extracts .swu from _swu.zip automatically
+        - Validates package format
+      operationId: uploadUpdatePackage
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: OTA package file
+      responses:
+        '200':
+          description: Package uploaded successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          fileName:
+                            type: string
+                          checksum:
+                            type: string
+                          size:
+                            type: integer
+                          osName:
+                            type: string
+                          version:
+                            type: string
+                          packageType:
+                            type: string
+        '400':
+          description: Invalid package or upload failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/deviceMgr/getUploadedUpdatePackage:
+    get:
+      tags:
+        - System
+      summary: Get uploaded package info
+      description: |
+        Get information about the currently staged OTA package.
+        
+        **Use Cases:**
+        - Verify upload
+        - Display package details
+        - Pre-installation check
+      operationId: getUploadedUpdatePackage
+      responses:
+        '200':
+          description: Package information retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UploadedPackageInfo'
+
+  /api/deviceMgr/applyUploadedUpdatePackage:
+    post:
+      tags:
+        - System
+      summary: Apply uploaded package
+      description: |
+        Install the previously uploaded OTA package.
+        
+        **Use Cases:**
+        - Manual update installation
+        - Offline updates
+        - Staged updates
+        
+        **Business Logic:**
+        - Verifies package integrity
+        - Applies update based on package type
+        - Reboots automatically on success
+        
+        **Warning:** Device will reboot after successful installation.
+      operationId: applyUploadedUpdatePackage
+      responses:
+        '200':
+          description: Update initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: No package staged or installation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Platform Integration Endpoints
+  /api/deviceMgr/reRegisterCamera:
+    post:
+      tags:
+        - Platform Integration
+      summary: Re-register camera with platform
+      description: |
+        Re-register the camera with the Authority Alert platform.
+        
+        **Use Cases:**
+        - Update device information
+        - Recover from registration issues
+        - Platform reconnection
+        
+        **Business Logic:**
+        - Uses saved secret_key from initial registration
+        - Updates device information on platform
+        - Does not require OAuth token
+      operationId: reRegisterCamera
+      responses:
+        '200':
+          description: Camera re-registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Not registered or re-registration failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # LED Control Endpoints
+  /api/ledMgr/getLEDs:
+    get:
+      tags:
+        - LED Control
+      summary: Get all LEDs
+      description: |
+        Get information about all available LEDs.
+        
+        **Use Cases:**
+        - LED configuration UI
+        - Status indicators
+        - Hardware inventory
+      operationId: getLEDs
+      responses:
+        '200':
+          description: LED list retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          leds:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/LEDInfo'
+
+  /api/ledMgr/getLED:
+    get:
+      tags:
+        - LED Control
+      summary: Get LED information
+      description: |
+        Get information about a specific LED.
+        
+        **Use Cases:**
+        - LED status check
+        - Configuration display
+        - Troubleshooting
+      operationId: getLED
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+          description: LED name
+      responses:
+        '200':
+          description: LED information retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LEDInfo'
+
+  /api/ledMgr/setLED:
+    post:
+      tags:
+        - LED Control
+      summary: Configure LED
+      description: |
+        Set LED brightness and trigger mode.
+        
+        **Use Cases:**
+        - Status indication
+        - Visual feedback
+        - Custom lighting
+        
+        **Triggers:**
+        - none: Manual control
+        - heartbeat: Blink to show system alive
+        - timer: Periodic blinking
+        - default-on: Always on
+      operationId: setLED
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetLEDRequest'
+      responses:
+        '200':
+          description: LED configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /api/ledMgr/getLEDTriggers:
+    get:
+      tags:
+        - LED Control
+      summary: Get available LED triggers
+      description: |
+        Get list of available LED trigger modes.
+        
+        **Use Cases:**
+        - Configuration UI
+        - Feature discovery
+        - Documentation
+      operationId: getLEDTriggers
+      responses:
+        '200':
+          description: Trigger list retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          triggers:
+                            type: array
+                            items:
+                              type: string
+                            example: ["none", "heartbeat", "timer", "default-on"]
+
+  # Recording Management Endpoints
+  /api/recordingMgr/getConfig:
+    get:
+      tags:
+        - Recording
+      summary: Get recording configuration
+      description: |
+        Get current recording configuration.
+        
+        **Use Cases:**
+        - Display settings
+        - Configuration backup
+        - Status check
+      operationId: getRecordingConfig
+      responses:
+        '200':
+          description: Recording configuration retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RecordingConfig'
+
+  /api/recordingMgr/setConfig:
+    post:
+      tags:
+        - Recording
+      summary: Set recording configuration
+      description: |
+        Update recording configuration.
+        
+        **Use Cases:**
+        - Enable/disable recording
+        - Change storage location
+        - Configure recording parameters
+      operationId: setRecordingConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordingConfig'
+      responses:
+        '200':
+          description: Recording configuration updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  # Analytics Endpoints
+  /api/deviceMgr/getAnalyticsConfig:
+    get:
+      tags:
+        - Device Management
+      summary: Get analytics configuration
+      description: |
+        Get current analytics collection settings.
+        
+        **Use Cases:**
+        - Privacy settings
+        - Compliance check
+        - Configuration display
+      operationId: getAnalyticsConfig
+      responses:
+        '200':
+          description: Analytics configuration retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AnalyticsConfig'
+
+  /api/deviceMgr/setAnalyticsConfig:
+    post:
+      tags:
+        - Device Management
+      summary: Set analytics configuration
+      description: |
+        Enable or disable analytics collection.
+        
+        **Use Cases:**
+        - Privacy control
+        - Compliance requirements
+        - User preference
+      operationId: setAnalyticsConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyticsConfig'
+      responses:
+        '200':
+          description: Analytics configuration updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  # Timezone Endpoints
+  /api/deviceMgr/setTimezone:
+    post:
+      tags:
+        - System
+      summary: Set system timezone
+      description: |
+        Set the system timezone.
+        
+        **Use Cases:**
+        - Initial setup
+        - Location change
+        - Daylight saving time
+        
+        **Business Logic:**
+        - Validates timezone against /usr/share/zoneinfo
+        - Updates /etc/localtime symlink
+        - Prevents path traversal attacks
+      operationId: setTimezone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetTimezoneRequest'
+      responses:
+        '200':
+          description: Timezone updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid timezone
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/deviceMgr/getTimezone:
+    get:
+      tags:
+        - System
+      summary: Get system timezone
+      description: |
+        Get the current system timezone.
+        
+        **Use Cases:**
+        - Display current setting
+        - Configuration backup
+        - Time display
+      operationId: getTimezone
+      responses:
+        '200':
+          description: Timezone retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          timezone:
+                            type: string
+                            example: "America/New_York"
+
+  /api/deviceMgr/getTimezoneList:
+    get:
+      tags:
+        - System
+      summary: Get available timezones
+      description: |
+        Get list of common timezones available on the device.
+        
+        **Use Cases:**
+        - Timezone selection UI
+        - Configuration wizard
+        - User guidance
+      operationId: getTimezoneList
+      responses:
+        '200':
+          description: Timezone list retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          timezones:
+                            type: array
+                            items:
+                              type: string
+                            example: ["UTC", "America/New_York", "Europe/London"]
+
+  /api/deviceMgr/setTimestamp:
+    post:
+      tags:
+        - System
+      summary: Set system time
+      description: |
+        Set the system time manually.
+        
+        **Use Cases:**
+        - No NTP available
+        - Initial time setup
+        - Time correction
+        
+        **Business Logic:**
+        - Sets system time using date command
+        - Syncs to hardware clock
+        - Requires root privileges
+      operationId: setTimestamp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetTimestampRequest'
+      responses:
+        '200':
+          description: Timestamp updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /api/deviceMgr/getTimestamp:
+    get:
+      tags:
+        - System
+      summary: Get system time
+      description: |
+        Get the current system time as Unix timestamp.
+        
+        **Use Cases:**
+        - Time synchronization
+        - Timestamp validation
+        - Clock display
+      operationId: getTimestamp
+      responses:
+        '200':
+          description: Timestamp retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          timestamp:
+                            type: integer
+                            example: 1704067200
+
+  # QR Code Endpoints
+  /api/qr/scan:
+    post:
+      tags:
+        - QR Code
+      summary: Start QR code scan
+      description: |
+        Start a QR code scanning session.
+        
+        **Use Cases:**
+        - Device provisioning
+        - WiFi credential sharing
+        - Configuration import
+        
+        **Business Logic:**
+        - Uses camera to scan QR codes
+        - Configurable timeout
+        - Returns scan ID for status polling
+      operationId: startQRScan
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QRScanRequest'
+      responses:
+        '200':
+          description: Scan started
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            example: "scan-123"
+
+  /api/qr/scan/{id}:
+    get:
+      tags:
+        - QR Code
+      summary: Get QR scan status
+      description: |
+        Get the status of a QR code scanning session.
+        
+        **Use Cases:**
+        - Poll for scan completion
+        - Display scan progress
+        - Retrieve scanned data
+      operationId: getQRScanStatus
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Scan session ID
+      responses:
+        '200':
+          description: Scan status retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/QRScanStatus'
+
+    delete:
+      tags:
+        - QR Code
+      summary: Cancel QR scan
+      description: |
+        Cancel an active QR code scanning session.
+        
+        **Use Cases:**
+        - User cancellation
+        - Timeout handling
+        - Error recovery
+      operationId: cancelQRScan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Scan cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /api/qr/health:
+    get:
+      tags:
+        - QR Code
+      summary: Get QR scanner health
+      description: |
+        Check if QR scanner is available and functioning.
+        
+        **Use Cases:**
+        - Feature availability check
+        - Troubleshooting
+        - UI state management
+      operationId: getQRScannerHealth
+      responses:
+        '200':
+          description: Scanner health status
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          available:
+                            type: boolean
+                          status:
+                            type: string
+                            enum: [ready, busy, error]
+
+  # Version Endpoint
+  /api/version:
+    get:
+      tags:
+        - System
+      summary: Get API version
+      description: |
+        Get API version and system information.
+        
+        **Use Cases:**
+        - Version compatibility check
+        - System monitoring
+        - Support diagnostics
+      operationId: getVersion
+      security: []
+      responses:
+        '200':
+          description: Version information retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          uptime:
+                            type: integer
+                            example: 86400
+                          timestamp:
+                            type: integer
+                            example: 1704067200
+                          version:
+                            type: string
+                            example: "1.0.0"
+
+  # Platform Info Endpoints
+  /api/deviceMgr/getPlatformInfo:
+    get:
+      tags:
+        - Platform Integration
+      summary: Get platform configuration
+      description: |
+        Get stored platform configuration and credentials.
+        
+        **Use Cases:**
+        - Display registration status
+        - Configuration backup
+        - Troubleshooting
+      operationId: getPlatformInfo
+      responses:
+        '200':
+          description: Platform information retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          platform_info:
+                            type: string
+                            description: JSON string containing platform configuration
+
+  /api/deviceMgr/savePlatformInfo:
+    post:
+      tags:
+        - Platform Integration
+      summary: Save platform configuration
+      description: |
+        Save platform configuration and credentials.
+        
+        **Use Cases:**
+        - Manual configuration
+        - Configuration restore
+        - Testing
+        
+        **Warning:** This endpoint stores sensitive credentials. Use with caution.
+      operationId: savePlatformInfo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - platform_info
+              properties:
+                platform_info:
+                  type: string
+                  description: JSON string containing platform configuration
+      responses:
+        '200':
+          description: Platform information saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  # Service Status Endpoints
+  /api/deviceMgr/queryServiceStatus:
+    get:
+      tags:
+        - System
+      summary: Get service status
+      description: |
+        Get status of system services.
+        
+        **Use Cases:**
+        - Health monitoring
+        - Troubleshooting
+        - Status dashboard
+      operationId: queryServiceStatus
+      responses:
+        '200':
+          description: Service status retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          sscmaNode:
+                            type: integer
+                            example: 0
+                            description: SSCMA node status (0 = running)
+                          system:
+                            type: integer
+                            example: 0
+                            description: System status (0 = running)
+                          uptime:
+                            type: integer
+                            example: 86400
+
+  /api/deviceMgr/getSystemStatus:
+    get:
+      tags:
+        - System
+      summary: Get system status
+      description: |
+        Get detailed system status information.
+        
+        **Use Cases:**
+        - System monitoring
+        - Dashboard display
+        - Health checks
+      operationId: getSystemStatus
+      responses:
+        '200':
+          description: System status retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          uptime:
+                            type: integer
+                          deviceName:
+                            type: string
+                          osName:
+                            type: string
+                          osVersion:
+                            type: string
+
+  /api/deviceMgr/getInternetStatus:
+    get:
+      tags:
+        - System
+      summary: Check internet connectivity
+      description: |
+        Check if the device has internet access by testing connectivity to reliable endpoints.
+
+        **Use Cases:**
+        - Network troubleshooting
+        - OOBE connectivity verification
+        - Dashboard status display
+
+        **Business Logic:**
+        - Tests multiple endpoints (Google, Cloudflare) for reliability
+        - Returns latency measurement on success
+        - 5 second timeout per endpoint
+      operationId: getInternetStatus
+      responses:
+        '200':
+          description: Internet status retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          available:
+                            type: boolean
+                            description: Whether internet access is available
+                            example: true
+                          latency_ms:
+                            type: integer
+                            description: Round-trip latency in milliseconds
+                            example: 45
+                          checked_host:
+                            type: string
+                            description: The endpoint used for the check
+                            example: "https://clients3.google.com/generate_204"
+                          error:
+                            type: string
+                            description: Error message if check failed
+
+  /api/deviceMgr/getDeviceList:
+    get:
+      tags:
+        - Device Management
+      summary: Get network device list
+      description: |
+        Get list of reCamera devices on the local network.
+        
+        **Use Cases:**
+        - Device discovery
+        - Multi-device management
+        - Network inventory
+        
+        **Business Logic:**
+        - Uses mDNS/Avahi for discovery
+        - Returns devices advertising _sscma._tcp service
+      operationId: getDeviceList
+      responses:
+        '200':
+          description: Device list retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          deviceList:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                ip:
+                                  type: string
+                                port:
+                                  type: integer
+
+  # Update Configuration Endpoints
+  /api/updateMgr/getConfig:
+    get:
+      tags:
+        - System
+      summary: Get update configuration
+      description: |
+        Get OTA update configuration.
+        
+        **Use Cases:**
+        - Display settings
+        - Configuration backup
+        - Troubleshooting
+      operationId: getUpdateConfig
+      responses:
+        '200':
+          description: Update configuration retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /api/updateMgr/setConfig:
+    post:
+      tags:
+        - System
+      summary: Set update configuration
+      description: |
+        Update OTA update configuration.
+        
+        **Use Cases:**
+        - Configure auto-updates
+        - Set update schedule
+        - Change update channel
+      operationId: setUpdateConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                autoUpdate:
+                  type: boolean
+                  description: Enable automatic updates
+                updateChannel:
+                  type: integer
+                  description: Update channel (0=stable, 1=beta, 2=custom)
+                customUrl:
+                  type: string
+                  description: Custom OTA server URL
+      responses:
+        '200':
+          description: Update configuration saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  # Model Management Endpoints
+  /api/deviceMgr/getModelInfo:
+    get:
+      tags:
+        - Device Management
+      summary: Get current model information
+      description: |
+        Get information about the currently loaded AI model.
+        
+        **Use Cases:**
+        - Display active model
+        - Model verification
+        - Configuration check
+      operationId: getModelInfo
+      responses:
+        '200':
+          description: Model information retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /api/deviceMgr/getModelFile:
+    get:
+      tags:
+        - Device Management
+      summary: Download model file
+      description: |
+        Download an AI model file from the device.
+        
+        **Use Cases:**
+        - Model backup
+        - Model sharing
+        - Model analysis
+        
+        **Business Logic:**
+        - Validates filename to prevent path traversal
+        - Only serves files from model directory
+      operationId: getModelFile
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Model filename
+      responses:
+        '200':
+          description: Model file content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Invalid model name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Model not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

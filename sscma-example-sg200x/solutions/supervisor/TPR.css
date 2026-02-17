@@ -1,0 +1,800 @@
+:root {
+  /* Color 3,68,255,.25 or #0344ff41*/
+  --primary-color: #7f7f76ff;
+  /* Red CMYK */
+  --secondary-color: #fdfffc;
+  /* Baby Powder */
+  --accent-color: #f1d302;
+  /* School Bus Yellow */
+  --background-color: #358600;
+  /* India Green */
+  --text-color: #5e747f;
+  /* Payne's Gray */
+  --black-color: #000000;
+  /* Black */
+  --white-color: #ffffff;
+  /* White */
+  --gray-color: #595959;
+  /* Davy's Gray */
+  --cta-color: #9be564;
+  /* SGBus Green */
+  --highlight-color: #f3b61f;
+  /* Xanthous */
+  --error-color: #e3170a;
+  /* Chili Red */
+  --cobalt-blue: #1fa9ffff;
+  /* Cobalt Blue #0047abff ,light new #1fa9ffff  mid new #0065a3ff    */
+  --folly: #ff1053ff;
+  /* Folly */
+  --walnut-brown: #5f5449ff;
+  /* Walnut Brown */
+  --platinum: #e0e0e0ff;
+  /* Platinum */
+  --dim-gray: #65655eff;
+  /*Dim Gray */
+  --bs-gray: #7f7f76ff;
+  /*bs-gray*/
+  --jet-gray: #2a2a27ff;
+  /*jet-gray*/
+  --red-1: #af2c2fff;
+  /*rgb(255, 5, 10);*/
+  --red-2: #730001ff;
+  --red-3: #a4000bff;
+  --blue-1: #2328bbff;
+  /*old blue1 #06446cff*/
+  /*rgb(0, 113, 195); :#1a237eff*/
+  /* rgb(3,68,255,.25) :#0344ff41*/
+  --blue-2: #0065a3ff;
+  /* #0071c3ff :*/
+  --blue-3: #00b8d9ff;
+  --blue-4: #5efbd6ff;
+  --gray-1: #ada9bbff;
+  --gray-2: #797586ff;
+  --gray-3: #404756ff;
+  --gray-4: #a4abbdff;
+  --gray-4-tl: #a4abbd20;
+}
+
+
+a {
+  color: var(--platinum) !important;
+}
+
+.bg-primary,
+.btn-primary {
+  background-color: var(--blue-1) !important;
+}
+
+.overlay-blue {
+  background-color: var(--blue-1) !important;
+  opacity: 0.7;
+  color: var(--white-color) !important;
+}
+
+.overlay-gray {
+  background-color: var(--gray-2) !important;
+  opacity: 0.8;
+  color: var(--white-color) !important;
+
+}
+
+.text-primary {
+  color: var(--black-color) !important;
+}
+
+.text-blue {
+  color: var(--blue-1) !important;
+}
+
+.btn-primary {
+  color: var(--platinum) !important;
+  border-color: var(--blue-2) !important;
+}
+
+.navbar-light {
+
+  color: var(--white-color) !important;
+}
+
+.navbar-light,
+.navbar-dark {
+  background-color: var(--blue-1) !important;
+  color: var(--white-color) !important;
+}
+
+.bg-secondary,
+.btn-secondary {
+  background-color: var(--gray-1) !important;
+}
+
+.bg-gray1 {
+  background-color: var(--gray-3) !important;
+  color: var(--black-color) !important;
+}
+
+.translucent-card {
+  background-color: rgba(3, 68, 255, 0.50); /* White background with 50% transparency */
+  border-radius: 8px; /* Optional: adds rounded corners to the card */
+  
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Optional: adds a subtle shadow for better visibility */
+}
+
+.translucent-card-grey {
+  background-color: rgba(31, 31, 27, 0.8); /* White background with 50% transparency */
+  border-radius: 8px; /* Optional: adds rounded corners to the card */
+  
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.9); /* Optional: adds a subtle shadow for better visibility */
+}
+
+
+.bg-gray2 {
+  background-color: var(--gray-4) !important;
+  color: var(--black-color) !important;
+}
+
+.bg-gray2-tl {
+  background-color: var(--gray-4-tl) !important;
+  color: var(--black-color) !important;
+}
+
+.btn-secondary-active {
+  background-color: var(--gray-2) !important;
+  color: var(--error-color) !important;
+}
+
+.text-secondary,
+.btn-secondary {
+  color: var(--white-color) !important;
+}
+
+.bg-success,
+.btn-success {
+  background-color: var(--cta-color) !important;
+}
+
+.text-success,
+.btn-success {
+  color: var(--black-color) !important;
+}
+
+.text-error {
+  color: var(--red-2) !important;
+}
+
+.bg-info,
+.btn-info {
+  color: var(--jet-gray) !important;
+  background-color: var(--gray-1) !important;
+  border-color: var(--jet-gray) !important;
+}
+
+.icon-green {
+  filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%);
+}
+
+.icon-red {
+  filter: invert(10%) sepia(50%) saturate(2476%) hue-rotate(306deg) brightness(118%) contrast(159%);
+}
+
+
+.text-info,
+.btn-info {
+  color: var(--jet-gray) !important;
+}
+
+.bg-warning,
+.btn-warning {
+  background-color: var(--highlight-color) !important;
+}
+
+.text-warning,
+.btn-warning {
+  color: var(--highlight-color) !important;
+}
+
+.bg-danger,
+.btn-danger {
+  background-color: var(--red-2) !important;
+}
+
+.bg-info-dark {
+  background-color: var(--jet-gray) !important;
+  color: var(--white-color)
+}
+
+.bg-black {
+  background-color: var(--black-color) !important;
+  color: var(--white-color)
+}
+
+
+
+.text-danger,
+.btn-danger {
+  color: var(--white-color) !important;
+}
+
+.btn-outline-danger {
+  color: var(--red-2) !important;
+  border-color: var(--red-2) !important;
+}
+
+.btn-outline-danger:hover {
+  color: var(--white-color) !important;
+  background-color: var(--red-2) !important;
+  border-color: var(--red-2) !important;
+}
+
+.btn-outline-primary {
+  color: var(--white-color) !important;
+  border-color: var(--blue-1) !important;
+}
+
+.btn-outline-primary:hover {
+  color: var(--white-color) !important;
+  background-color: var(--blue-1) !important;
+  border-color: var(--black-color) !important;
+}
+
+.btn-outline-secondary {
+  color: var(--gray-2) !important;
+  border-color: var(--gray-2) !important;
+}
+
+.btn-outline-secondary:hover {
+  color: var(--white-color) !important;
+  background-color: var(--gray-2) !important;
+  border-color: var(--black-color) !important;
+}
+
+.btn-outline-success {
+  color: var(--cta-color) !important;
+  border-color: var(--cta-color) !important;
+}
+
+.btn-outline-success:hover {
+  color: var(--white-color) !important;
+  background-color: var(--cta-color) !important;
+  border-color: var(--black-color) !important;
+}
+
+.btn-outline-info {
+  color: var(--gray-1) !important;
+  border-color: var(--gray-1) !important;
+}
+
+.btn-outline-info:hover {
+  color: var(--white-color) !important;
+  background-color: var(--gray-1) !important;
+  border-color: var(--gray-1) !important;
+}
+
+.btn-outline-warning {
+  color: var(--highlight-color) !important;
+  border-color: var(--highlight-color) !important;
+}
+
+.btn-outline-warning:hover {
+  color: var(--white-color) !important;
+  background-color: var(--highlight-color) !important;
+  border-color: var(--black-color) !important;
+}
+
+.btn-outline-dark {
+  color: var(--jet-gray) !important;
+  border-color: var(--jet-gray) !important;
+}
+
+.btn-outline-dark:hover {
+  color: var(--white-color) !important;
+  background-color: var(--jet-gray) !important;
+  border-color: var(--black-color) !important;
+}
+
+.btn-outline-light {
+  color: var(--platinum) !important;
+  border-color: var(--platinum) !important;
+}
+
+.btn-outline-light:hover {
+  color: var(--white-color) !important;
+  background-color: var(--platinum) !important;
+  border-color: var(--black-color) !important;
+}
+
+
+.bg-light,
+.btn-light {
+  background-color: var(--primary-color) !important;
+}
+
+.text-light,
+.btn-light {
+  color: var(--white-color) !important;
+}
+
+.bg-dark,
+.btn-dark {
+  background-color: var(--blue-1) !important;
+}
+
+.btn-danger {
+  color: var(--white-color) !important;
+}
+
+.btn-danger {
+  background-color: var(--red-2) !important;
+}
+
+
+
+.text-dark,
+.btn-dark {
+  color: var(--platinum) !important;
+}
+
+.text-red {
+  color: var(--red-3) !important;
+}
+
+.text-burg {
+  color: var(--red-2) !important;
+}
+
+.form-container {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 20px;
+  border-radius: 5px;
+}
+
+.form-container label {
+  font-weight: bold;
+}
+
+.form-container input,
+.form-container select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.form-container button {
+  width: 100%;
+
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+
+}
+
+.form-container button:hover {
+  background-color: #45a049;
+}
+
+.btn-secondary,
+.btn-success,
+.btn-info,
+.btn-warning,
+.btn-danger,
+.btn-light,
+.btn-dark {
+  border-color: inherit !important;
+}
+
+footer {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--cobalt-blue);
+  color: var(--platinum);
+  padding: 10px;
+  text-align: center;
+  margin-top: 30px;
+}
+
+.navbar-nav .nav-link .nav-item .dropdown-menu .dropdown-item {
+  margin: 25px 25px;
+  list-style: none;
+}
+
+.nav {
+  width: 100%
+}
+
+.dropdown-menu {
+  max-height: 200px;
+  /* Set the maximum height for the menu */
+  overflow-y: auto;
+  /* Enable vertical scrolling */
+}
+
+.search {
+  margin-bottom: 20px;
+}
+
+#department-search {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+h1 {
+  font-size: 48px
+}
+
+.border-danger {
+  border-color: var(--red-2) !important;
+  color: var(--red-2) !important;
+}
+
+.hero-text {
+  position: relative;
+  bottom: 5rem;
+  left: 15rem;
+  color: var(--white-color);
+  font-size: 4rem;
+  font-weight: bold;
+  overflow-x: visible;
+}
+
+
+.hero-image-2 {
+  position: relative;
+  top: 0;
+  left: 3rem;
+  width: 30rem;
+  height: 30rem;
+  opacity: 0.4;
+  overflow: clip;
+  overflow-y: hidden;
+}
+
+
+.btn-hero {
+  position: relative;
+  top: 0rem;
+  left: 10rem;
+  width: max-content;
+
+}
+
+.btn-hero-text {
+
+  color: var(--white-color);
+  font-size: 18px;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.design-main-containers {
+  border: 5px solid var(--cta-color);
+}
+
+.design-container {
+  border: 10px solid var(--cta-color);
+
+}
+
+.translucent-card-grey-1 {
+  background-color: rgba(31, 31, 27, 0.8); /* White background with 50% transparency */
+  border-radius: 8px; /* Optional: adds rounded corners to the card */
+  /* Optional: adds a border */
+  box-shadow: 2px 2px 4px 4px rgba(3, 68, 255, 0.4), -2px -2px 4px 4px rgba(3,68,255,0.2) ; /* Optional: adds a subtle shadow for better visibility */
+}
+
+.design-element {
+  border: 1px solid var(--highlight-color);
+}
+
+.design-element-image {
+  border: 5px solid var(--white-color);
+}
+
+.hero-image-md {
+  position: relative;
+  top: 0rem;
+  right: 10rem;
+  width: 20rem;
+  height: 20rem;
+  opacity: 0.4;
+}
+
+
+.body {
+  font-family: 'Black Ops One';
+  font-size: 22px;
+  font-family: 'Old Standard TT';
+  font-size: 22px;
+  font-family: 'Orbit';
+  font-size: 22px;
+  font-family: 'Glegoo';
+  font-size: 12px;
+}
+
+.hero-image {
+  height: 100px;
+  width: 200px;
+}
+
+.translucent-accordian {
+  background-color: rgba(3, 68, 255, 0.25); /* White background with 50% transparency */
+  border-radius: 8px; /* Optional: adds rounded corners to the card */
+  border: 1px solid rgba(0,0,0, 0.6);
+  box-shadow: 0 2px 1px 1px rgba(0,0,0, 0.2); /* Optional: adds a subtle shadow for better visibility */
+}
+
+
+.nav_overlay {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  border-radius: 100%;
+  background-color: var(--blue-3);
+
+  border-top: var(--gray-3) ridge 5px;
+  border-left: var(--gray-3) ridge 5px;
+  border-right: var(--gray-3) ridge 5px;
+  box-shadow: inset 5px 10px 10px 5px var(--blue-1);
+  width: 150px;
+  height: 150px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hero-section-design {
+  position: relative;
+  height: 500px; /* Adjusted for a larger view */
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF; /* Ensuring text color is white for better visibility */
+  text-align: center; /* Centering text for aesthetics */
+  background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://cdn.thepolicerecord.com/static/images/media/blueback.jpeg');
+  /* Adding a dark gradient overlay on top of the image for text contrast */
+  background-size: cover;
+  background-position: center; /* Centering background image for better focus */
+  background-repeat: no-repeat;
+}
+
+.hero-section-design::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: inherit;
+  /* This makes the pseudo-element inherit the background of the parent. Useful if you want to add additional styling/effects on the background */
+  opacity: 0.7; /* Adjusting opacity for a slightly darker overlay effect */
+  z-index: -1;
+}
+
+.hero-section-design>* {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .hero-section-design {
+    height: 300px; /* A comfortable height for mobile devices */
+    background-position: center; /* Centering the background image */
+    padding: 20px; /* Adding some padding to ensure content doesn't touch the edges */
+  }
+}
+
+
+.hero-section-lp {
+  position: relative;
+  /* Needed for absolute positioning of the pseudo-element */
+  height: 400px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-section-lp::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('https://dev.thepolicerecord.com/static/images/media/adoptback.jpeg');
+  background-size: cover;
+  background-position: top;
+  background-repeat: no-repeat;
+  opacity: 0.4;
+  /* Apply opacity to the image */
+  z-index: -1;
+  /* Place it behind the content */
+}
+
+/* Make sure your text or content is not affected by the opacity */
+.hero-section-lp>* {
+  position: relative;
+  z-index: 1;
+}
+
+
+@media (max-width: 768px) {
+  .hero-section-lp {
+    height: 200px;
+    /* Smaller height for mobile devices */
+    background-position: top;
+    /* Adjust position for smaller screens */
+  }
+}
+
+.card-custom-style {
+  margin-top: -120px;
+}
+
+@media (max-width: 768px) {
+  .card-custom-style {
+    margin-top: 0 !important;
+    /* Adjusts layout for mobile screens */
+  }
+}
+
+.card-custom-style .card-img-top {
+  width: 100%;  /* Ensure image takes up the full card width */
+  height: auto; /* Maintain aspect ratio */
+}
+
+
+
+@media (min-width:0px) and (max-width:1199px) {
+  .hero-image {
+    position: relative;
+    top: 2rem;
+    right: 4rem;
+    width: 200px;
+    height: 100px;
+    opacity: 0.4;
+
+  }
+
+  .hero-text {
+    position: relative;
+    bottom: 1rem;
+    left: 1rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+
+
+  }
+
+  .hero-text-2 {
+    position: relative;
+    top: 1rem;
+    left: 5rem;
+    font-size: 1rem;
+    font-weight: bold;
+  }
+
+  .btn-hero {
+    position: relative;
+    top: 1rem;
+    left: 5rem;
+    width: max-content;
+    opacity: 0.8;
+    overflow-y: clip;
+    font-family: "Glegoo";
+    font-size: 10px;
+    font-weight: bold;
+    text-decoration: none;
+  }
+
+}
+
+@media (min-width:1400px) {
+  .hero-image {
+    position: relative;
+    bottom: 5rem;
+    right: 15rem;
+    width: 100%;
+    height: auto;
+    opacity: 0.3;
+    overflow-x: visible;
+  }
+
+  .hero-text {
+    position: relative;
+    bottom: 5rem;
+    left: 2rem;
+    overflow-x: visible;
+    white-space: nowrap;
+    font-size: 4rem;
+
+  }
+
+}
+
+@media (min-width:1200px) and (max-width:1399px) {
+  .hero-image {
+    position: relative;
+    bottom: 5rem;
+    right: 15rem;
+    width: 100%;
+    height: auto;
+    opacity: 0.5;
+    overflow-x: visible;
+  }
+
+  .hero-text {
+    position: relative;
+    bottom: 8rem;
+    left: 2rem;
+    overflow-x: visible;
+    white-space: nowrap;
+    font-size: 3.5rem;
+  }
+
+  .btn-hero {
+    position: relative;
+    top: -8rem;
+    right: 5rem;
+    width: max-content;
+  }
+
+  .hero-text-2 {
+    position: relative;
+    bottom: 8rem;
+    left: 40rem;
+    font-size: 1rem;
+    font-weight: bold;
+
+  }
+
+
+}
+.translucent-dg {
+  background-color: rgba(31, 31, 27, 0.9); /* White background with 50% transparency */
+}
+
+
+.translucent-red{
+  background-color: rgba(104, 0, 11, 0.5); 
+  color: rgba(255, 255, 255, 0.6);
+}
+.consistent-height {
+    height: auto; /* Adjust height as needed */
+    object-fit: cover; /* Ensures images cover the area without distorting aspect ratio */
+    width: 100%; /* Keeps the aspect ratio intact */
+}
+
+.translucent-red:hover{
+  background-color: rgba(104, 0, 11, 0.8); 
+  color: rgba(255, 255, 255, 0.9);
+}
+.translucent-red:active{
+  background-color: rgba(104, 0, 11, 1); 
+  color: rgba(255, 255, 255, 1);
+}
+.translucent-blue{
+  background-color: rgba(3, 68, 255, 0.5); 
+  color: rgba(255, 255, 255, 0.6);
+  box-shadow: 2px 2px 1px rgba(0, 0, 0, 0.9);
+  border-radius: 8px;
+  
+}
+.translucent-blue:hover{
+  background-color: rgba(3, 68, 255, 0.7); 
+  color: rgba(255, 255, 255, 0.9);
+}
+.translucent-blue:active{
+  background-color: rgba(3, 68, 255, 0.9); 
+  color: rgba(255, 255, 255, 1);
+}
+

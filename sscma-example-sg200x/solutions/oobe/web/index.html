@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Authority Alert – Setup</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+      <div style="background: white; padding: 2rem; border-radius: 0.5rem; text-align: center;">
+        <div class="spinner"></div>
+        <div id="loading-message" class="loading-text">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Error Alert -->
+    <div id="error-alert" class="hidden" style="position: fixed; top: 1rem; left: 50%; transform: translateX(-50%); z-index: 10000; min-width: 300px; max-width: 500px;">
+      <div class="alert alert-error">
+        <strong>Error:</strong> <span id="error-message"></span>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <h1>Authority Alert</h1>
+        <p>Device Setup</p>
+      </div>
+
+      <!-- Progress Steps -->
+      <div class="steps">
+        <div class="step">
+          <div class="step-circle">1</div>
+          <div class="step-label">Welcome</div>
+        </div>
+        <div class="step">
+          <div class="step-circle">2</div>
+          <div class="step-label">Password</div>
+        </div>
+        <div class="step">
+          <div class="step-circle">3</div>
+          <div class="step-label">Device</div>
+        </div>
+        <div class="step">
+          <div class="step-circle">4</div>
+          <div class="step-label">WiFi</div>
+        </div>
+        <div class="step">
+          <div class="step-circle">5</div>
+          <div class="step-label">Register</div>
+        </div>
+        <div class="step">
+          <div class="step-circle">6</div>
+          <div class="step-label">Complete</div>
+        </div>
+      </div>
+
+      <!-- Step 1: Welcome -->
+      <div id="step-1" class="setup-step hidden">
+        <div class="card">
+          <h2 class="card-title">Welcome to Authority Alert</h2>
+          <p>Thank you for choosing Authority Alert. This setup wizard will help you configure your device.</p>
+
+          <div class="btn-group" style="margin-top: 2rem;">
+            <button class="btn btn-primary" onclick="oobeApp.handleWelcomeNext()">
+              Get Started →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Password Setup -->
+      <div id="step-2" class="setup-step hidden">
+        <div class="card">
+          <h2 class="card-title">Set Password</h2>
+          <p id="password-message">Please set a secure password for your device.</p>
+
+          <form onsubmit="event.preventDefault(); oobeApp.handlePasswordNext();">
+            <div class="form-group">
+              <label class="form-label" for="old-password">Current Password</label>
+              <div class="password-input-wrapper">
+                <input
+                  type="password"
+                  id="old-password"
+                  class="form-input"
+                  placeholder="Enter current password"
+                  autocomplete="current-password"
+                  value="recamera"
+                />
+                <button type="button" class="password-toggle" tabindex="-1" onclick="oobeApp.togglePasswordVisibility('old-password', this)" title="Show password">
+                  <span class="eye-icon">👁</span>
+                </button>
+              </div>
+              <small class="form-hint">Default password: recamera</small>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="new-password">New Password</label>
+              <div class="password-input-wrapper">
+                <input
+                  type="password"
+                  id="new-password"
+                  class="form-input"
+                  placeholder="Enter new password"
+                  autocomplete="new-password"
+                  required
+                />
+                <button type="button" class="password-toggle" tabindex="-1" onclick="oobeApp.togglePasswordVisibility('new-password', this)" title="Show password">
+                  <span class="eye-icon">👁</span>
+                </button>
+              </div>
+              <div class="form-help">Minimum 8 characters</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="confirm-password">Confirm Password</label>
+              <div class="password-input-wrapper">
+                <input
+                  type="password"
+                  id="confirm-password"
+                  class="form-input"
+                  placeholder="Confirm new password"
+                  autocomplete="new-password"
+                  required
+                />
+                <button type="button" class="password-toggle" tabindex="-1" onclick="oobeApp.togglePasswordVisibility('confirm-password', this)" title="Show password">
+                  <span class="eye-icon">👁</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="btn-group">
+              <button type="submit" class="btn btn-primary">
+                Continue →
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Step 3: Device Configuration -->
+      <div id="step-3" class="setup-step hidden">
+        <div class="card">
+          <h2 class="card-title">Configure Device</h2>
+          <p>Set location, timezone, and date/time for your device.</p>
+
+          <form onsubmit="event.preventDefault(); oobeApp.handleDeviceConfigNext();">
+            <div class="form-group">
+              <label class="form-label" for="device-name">Location</label>
+              <input
+                type="text"
+                id="device-name"
+                class="form-input"
+                placeholder="e.g., Front Door, Parking Lot, Main Entrance"
+                required
+              />
+              <div class="form-help">Enter the location where this device is installed</div>
+              <button type="button" class="btn btn-secondary" style="margin-top: 0.5rem;" onclick="oobeApp.requestGeolocation()">
+                📍 Use My Location
+              </button>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="timezone-select">Timezone</label>
+              <select id="timezone-select" class="form-select" required>
+                <option value="">Loading timezones...</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="device-date">Date</label>
+              <input
+                type="date"
+                id="device-date"
+                class="form-input"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="device-time">Time</label>
+              <input
+                type="time"
+                id="device-time"
+                class="form-input"
+                required
+              />
+              <div class="form-help">Set the current date and time</div>
+            </div>
+
+            <div class="btn-group">
+              <button type="button" class="btn btn-secondary" onclick="oobeApp.showStep(2)">
+                ← Back
+              </button>
+              <button type="submit" class="btn btn-primary">
+                Continue →
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Step 4: WiFi Setup -->
+      <div id="step-4" class="setup-step hidden">
+        <div class="card">
+          <h2 class="card-title">Connect to WiFi</h2>
+          <p>Select a WiFi network to connect your device to the internet.</p>
+
+          <div style="margin: 1rem 0;">
+            <button type="button" class="btn btn-secondary" onclick="oobeApp.rescanWiFi()">
+              🔄 Rescan Networks
+            </button>
+          </div>
+
+          <div id="wifi-list" class="wifi-list" style="margin: 1.5rem 0;">
+            <!-- WiFi networks will be populated here -->
+          </div>
+
+          <div id="wifi-password-group" class="form-group hidden">
+            <label class="form-label" for="wifi-password">WiFi Password</label>
+            <div class="password-input-wrapper">
+              <input
+                type="password"
+                id="wifi-password"
+                class="form-input"
+                placeholder="Enter WiFi password"
+              />
+              <button type="button" class="password-toggle" tabindex="-1" onclick="oobeApp.togglePasswordVisibility('wifi-password', this)" title="Show password">
+                <span class="eye-icon">👁</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="btn-group">
+            <button type="button" class="btn btn-secondary" onclick="oobeApp.showStep(3)">
+              ← Back
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="oobeApp.handleWiFiSkip()">
+              Skip
+            </button>
+            <button type="button" class="btn btn-primary" onclick="oobeApp.handleWiFiNext()">
+              Connect →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5: Camera Registration -->
+      <div id="step-5" class="setup-step hidden">
+        <div class="card">
+          <h2 class="card-title">Register Your Camera</h2>
+          <p>Use a registration code from the Authority Alert app to register your camera.</p>
+
+          <!-- Internet Warning Banner -->
+          <div id="internet-warning" class="alert alert-warning hidden" style="margin-bottom: 1rem;">
+            <strong>No internet connection.</strong> Registration will continue when connection is restored.
+          </div>
+
+          <!-- Registration Status -->
+          <div id="registration-status" class="registration-status hidden">
+            <div id="registration-status-icon" class="status-icon"></div>
+            <div id="registration-status-text" class="status-text"></div>
+          </div>
+
+          <!-- Registration Options (shown by default) -->
+          <div id="registration-options" class="registration-options">
+            <button type="button" class="btn btn-info btn-large" onclick="oobeApp.startCodeRegistration()">
+              Use Registration Code
+            </button>
+          </div>
+
+          <!-- Code Registration Section (hidden by default, shown when using code) -->
+          <div id="code-registration-section" class="code-registration-section hidden">
+            <div class="code-display-container">
+              <div class="code-label">Your Registration Code</div>
+              <div id="registration-code-display" class="registration-code">--- ---</div>
+              <div id="code-expiry-timer" class="code-expiry-timer">Generating...</div>
+            </div>
+            <div class="code-instructions">
+              <span id="code-status-icon" class="status-icon">📱</span>
+              <span id="code-status-text" class="status-text">Enter this code in the Authority Alert mobile app</span>
+            </div>
+            <div class="code-help">
+              <p>1. Open the Authority Alert app on your phone</p>
+              <p>2. Go to Settings &gt; Add Camera</p>
+              <p>3. Select "Enter Code" and type the code above</p>
+              <p style="margin-top: 1rem;"><strong>Or</strong> claim from your browser:</p>
+            </div>
+            <a href="https://dev.thepolicerecord.com/claim" target="_blank" rel="noopener" class="btn btn-secondary" style="margin-bottom: 1rem;">
+              Open Claim Page ↗
+            </a>
+            <div class="btn-group" style="margin-top: 1rem;">
+              <button type="button" class="btn btn-secondary" onclick="oobeApp.cancelCodeRegistration()">
+                Cancel
+              </button>
+              <button type="button" id="continue-background-btn" class="btn btn-info hidden" onclick="oobeApp.exitToSupervisorUI()">
+                Continue in Background
+              </button>
+            </div>
+          </div>
+
+          <!-- Post-Registration Info (shown after successful registration) -->
+          <div id="registration-success" class="registration-success hidden">
+            <div class="success-icon">✓</div>
+            <h3>Camera Registered Successfully!</h3>
+            <p>Your camera is now linked to your account and ready to use.</p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="btn-group">
+            <button type="button" class="btn btn-secondary" onclick="oobeApp.showStep(4)">
+              ← Back
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="oobeApp.handleRegistrationSkip()">
+              Skip for Now
+            </button>
+            <button type="button" id="continue-after-registration-btn" class="btn btn-success hidden" onclick="oobeApp.handleRegistrationComplete()">
+              Continue →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 6: Completion -->
+      <div id="step-6" class="setup-step hidden">
+        <div class="card">
+          <h2 class="card-title">Setup Complete!</h2>
+          
+          <div id="completion-message">
+            <p>Your Authority Alert device has been configured successfully.</p>
+          </div>
+
+          <h3 style="margin-top: 2rem; margin-bottom: 1rem; font-size: 1.125rem;">Setup Summary</h3>
+          <div id="setup-summary">
+            <!-- Summary will be populated here -->
+          </div>
+
+          <div class="alert alert-info" style="margin-top: 1.5rem;">
+            <strong>Next Steps:</strong><br>
+            You will be redirected to the main interface in a few seconds, or click the button below to continue.
+          </div>
+
+          <div class="btn-group">
+            <button type="button" class="btn btn-success" onclick="oobeApp.handleComplete()">
+              Go to Dashboard →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/jmuxer.min.js"></script>
+    <script src="/js/supervisor-api.js"></script>
+    <script src="/js/oobe-app.js"></script>
+  </body>
+</html>

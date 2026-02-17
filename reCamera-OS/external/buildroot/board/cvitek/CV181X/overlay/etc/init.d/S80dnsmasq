@@ -1,0 +1,35 @@
+#!/bin/sh
+
+_ip() { ifconfig "$1" 2>/dev/null | awk '/inet addr:/ {print $2}' | awk -F':' '{print $2}'; }
+
+CONF_FILE="/etc/dnsmasq/default.conf"
+if [ "$(cat /sys/devices/platform/4340000.usb/udc/4340000.usb/state)" = "configured" ]; then
+	CONF_FILE="/etc/dnsmasq/usb_wlan1.conf"
+fi
+if [ -z "$(_ip wlan1)" ]; then
+	CONF_FILE="/etc/dnsmasq/usb_only.conf"
+fi
+
+[ -f $CONF_FILE ] || exit 0
+
+case "$1" in
+	start)
+		printf "Starting dnsmasq: "
+		start-stop-daemon -S -x /usr/sbin/dnsmasq -- -C $CONF_FILE
+		[ $? = 0 ] && echo "OK" || echo "FAIL"
+		;;
+	stop)
+		printf "Stopping dnsmasq: "
+		start-stop-daemon -K -q -x /usr/sbin/dnsmasq
+		[ $? = 0 ] && echo "OK" || echo "FAIL"
+		;;
+	restart|reload)
+		$0 stop
+		$0 start
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart}"
+		exit 1
+esac
+
+exit 0

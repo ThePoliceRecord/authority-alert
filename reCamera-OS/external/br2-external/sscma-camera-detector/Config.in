@@ -1,0 +1,6 @@
+config BR2_PACKAGE_SSCMA_CAMERA_DETECTOR
+    bool "sscma-camera-detector"
+    default y
+    help
+      AI model-based object detection service for reCamera
+      Performs real-time object detection using SSCMA-Micro framework

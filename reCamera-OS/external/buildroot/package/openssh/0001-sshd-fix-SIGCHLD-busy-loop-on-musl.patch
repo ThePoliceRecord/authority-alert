@@ -1,0 +1,82 @@
+From: Authority Alert <patch@authority-alert.local>
+Date: Thu, 26 Dec 2024 00:00:00 +0000
+Subject: [PATCH] sshd: Fix SIGCHLD busy loop on musl libc
+
+On musl libc (particularly on RISC-V), sshd can enter a busy loop
+after the first SSH connection terminates. The issue manifests as
+continuous wait4(-1, WNOHANG) calls returning ECHILD.
+
+The root cause is that SIGCHLD signals can be delivered repeatedly
+or spuriously on musl, causing the main server loop to spin
+continuously checking received_sigchld when there are no actual
+children to reap.
+
+This patch tracks consecutive spurious SIGCHLD deliveries (where
+no children are actually reaped) and introduces a small delay to
+prevent busy-looping when this condition is detected.
+
+Signed-off-by: Authority Alert <patch@authority-alert.local>
+---
+ sshd.c | 23 +++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
+
+--- a/sshd.c
++++ b/sshd.c
+@@ -423,14 +423,16 @@ child_finish_early_term(void)
+ }
+ 
+ /* Reap all children that have exited; called after SIGCHLD */
+-static void
++/* Returns the number of children successfully reaped. */
++static int
+ child_reap_all_exited(void)
+ {
+ 	int i;
+ 	pid_t pid;
++	int reaped = 0;
+ 	int status;
+ 
+ 	if (children == NULL)
+-		return;
++		return 0;
+ 
+ 	for (;;) {
+ 		if ((pid = waitpid(-1, &status, WNOHANG)) == 0)
+@@ -442,6 +444,7 @@ child_reap_all_exited(void)
+ 				error_f("waitpid: %s", strerror(errno));
+ 			break;
+ 		}
++		reaped++;
+ 		child_exit(pid, status);
+ 	}
+ 
+@@ -450,6 +453,7 @@ child_reap_all_exited(void)
+ 			continue;
+ 		child_reap(&(children[i]));
+ 	}
++	return reaped;
+ }
+ 
+ static void
+@@ -912,6 +916,7 @@ server_accept_loop(int *sock_in, int *so
+ 	int i, ret, npfd, r;
+ 	int oactive = -1, listening = 0, lameduck = 0;
+ 	int *startup_pollfd;
++	int spurious_sigchld = 0;
+ 	ssize_t len;
+ 	const u_char *ptr;
+ 	char c = 0;
+@@ -961,8 +966,14 @@ server_accept_loop(int *sock_in, int *so
+ 		}
+ 		if (received_sigchld) {
+-			child_reap_all_exited();
+ 			received_sigchld = 0;
++			if (child_reap_all_exited() > 0) {
++				spurious_sigchld = 0;
++			} else if (++spurious_sigchld > 2) {
++				/* Prevent busy-loop on spurious SIGCHLD (musl) */
++				usleep(50000);
++			}
+ 		}
+ 		if (received_siginfo) {
+ 			show_info();

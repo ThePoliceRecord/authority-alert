@@ -1,0 +1,37 @@
+# build
+# freertos
+# fsbl
+# host-tools
+# isp_tuning
+# linux_5.10
+# cvi_mpi
+# opensbi
+# osdrv
+# ramdisk
+# u-boot-2021.10
+# buildroot-2021.05
+# oss
+# cviruntime
+# cvikernel
+# cvimath
+# cvibuilder
+# cnpy
+# flatbuffers
+# install
+
+
+# OS generated files
+.DS_Store
+
+# Build output dirs
+/release
+output*/
+
+# ccache build cache
+.ccache/
+
+# Certificates
+*.pem
+
+# vscode generated files
+.vscode*

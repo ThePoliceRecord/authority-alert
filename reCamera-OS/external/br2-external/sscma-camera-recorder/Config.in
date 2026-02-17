@@ -1,0 +1,6 @@
+config BR2_PACKAGE_SSCMA_VIDEO_RECORDER
+    bool "sscma-camera-recorder"
+    default y
+    help
+      H.264 video recording service for reCamera
+      Provides H.264 video recording to MP4 files for later playback

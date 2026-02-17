@@ -1,0 +1,23 @@
+config BR2_PACKAGE_ZEROTIER_ONE
+	bool "zerotier-one"
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on BR2_TOOLCHAIN_HAS_THREADS_NPTL
+	depends on BR2_USE_MMU
+	select BR2_PACKAGE_LIBOPENSSL
+	help
+	  ZeroTier is a software-defined network hypervisor that enables
+	  the creation of virtual Ethernet networks that work over
+	  physical networks, as if they were connected by a virtual
+	  Layer 2 switch.
+
+	  This package installs the zerotier-one daemon and zerotier-cli
+	  command line tool.
+
+	  Note: The kernel must have TUN/TAP support enabled
+	  (CONFIG_TUN=y or CONFIG_TUN=m).
+
+	  https://www.zerotier.com/
+
+comment "zerotier-one needs a toolchain w/ C++, NPTL"
+	depends on BR2_USE_MMU
+	depends on !BR2_INSTALL_LIBSTDCPP || !BR2_TOOLCHAIN_HAS_THREADS_NPTL

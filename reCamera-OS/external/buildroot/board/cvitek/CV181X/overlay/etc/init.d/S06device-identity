@@ -1,0 +1,81 @@
+#!/bin/sh
+
+set -e
+
+DEVICE_NAME_FILE="/etc/recamera.conf/device_name"
+HOSTNAME_PREFIX="authorityalert"
+
+read_mac() {
+	# Prefer wlan0 (stable across AP/LAN modes), then eth0, then wlan1.
+	for iface in wlan0 eth0 wlan1; do
+		if [ -r "/sys/class/net/${iface}/address" ]; then
+			cat "/sys/class/net/${iface}/address"
+			return 0
+		fi
+	done
+	return 1
+}
+
+mac_suffix() {
+	# Convert aa:bb:cc:dd:ee:ff -> ddeeff
+	# (last 3 bytes, no separators)
+	awk -F: '{print $(NF-2)$(NF-1)$NF}'
+}
+
+read_saved_name() {
+	# Read without trailing newlines; return empty on error.
+	if [ -r "$DEVICE_NAME_FILE" ]; then
+		cat "$DEVICE_NAME_FILE" 2>/dev/null | tr -d '\r\n'
+	fi
+}
+
+is_valid_name() {
+	# Match the supervisor API validation: alnum start/end; allow '-' and '_' inside; max 63.
+	# Note: kernel hostname rules are stricter than this (no underscores), but we keep parity
+	# with the existing API and rely on that validation for user-set values.
+	echo "$1" | grep -Eq '^[A-Za-z0-9]([A-Za-z0-9_-]{0,61}[A-Za-z0-9])?$'
+}
+
+start() {
+	saved="$(read_saved_name)"
+	if [ -n "$saved" ] && is_valid_name "$saved"; then
+		name="$saved"
+	else
+		mac="$(read_mac 2>/dev/null || true)"
+		if [ -n "$mac" ]; then
+			suffix="$(echo "$mac" | mac_suffix | tr -d '\n' | tr 'A-F' 'a-f')"
+		else
+			suffix="unknown"
+		fi
+
+		name="${HOSTNAME_PREFIX}-${suffix}"
+	fi
+
+	# Set kernel hostname early for Avahi and app layers.
+	hostname "$name" || true
+
+	# Keep /etc/hostname consistent (best-effort).
+	echo "$name" > /etc/hostname
+
+	# Supervisor/TLS uses this file; keep existing path for compatibility.
+	mkdir -p "$(dirname "$DEVICE_NAME_FILE")"
+	echo "$name" > "$DEVICE_NAME_FILE"
+}
+
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		# no-op
+		;;
+	restart|reload)
+		start
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart}" >&2
+		exit 1
+		;;
+esac
+
+exit 0

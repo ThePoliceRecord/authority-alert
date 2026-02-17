@@ -1,0 +1,5 @@
+# Hash for ZeroTier-One v1.16.0
+# From https://github.com/zerotier/ZeroTierOne/archive/refs/tags/1.16.0.tar.gz
+sha256  aa9de313d365bf0efb3871aaa56f2d323a08f46df47b627c4eff4f4203fa7fc5  zerotier-one-1.16.0.tar.gz
+# License hash (BUSL-1.1)
+sha256  18797d9ced049ddab9a4685e89acbe95de08efdf5eedaf82e870d63f6a3ccc7f  LICENSE.txt

@@ -1,0 +1,17 @@
+<?xml version="1.0" standalone='no'?><!--*-nxml-*-->
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+
+<service-group>
+  <!-- %h expands to the device hostname (authorityalert) -->
+  <name replace-wildcards="yes">%h</name>
+
+  <!-- Advertise the local web UI for discovery (Bonjour/mDNS) -->
+  <service>
+    <type>_http._tcp</type>
+    <port>80</port>
+  </service>
+  <service>
+    <type>_https._tcp</type>
+    <port>443</port>
+  </service>
+</service-group>

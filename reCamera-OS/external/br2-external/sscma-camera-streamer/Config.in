@@ -1,0 +1,6 @@
+config BR2_PACKAGE_SSCMA_CAMERA_STREAMER
+    bool "sscma-camera-streamer"
+    default y
+    help
+      WebSocket H.264 camera streaming service for reCamera
+      Provides real-time video streaming over WebSocket with H.264 encoding

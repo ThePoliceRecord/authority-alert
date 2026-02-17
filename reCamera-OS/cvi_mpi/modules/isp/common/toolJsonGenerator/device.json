@@ -1,0 +1,26 @@
+"DEVICE": {
+    "FULL_NAME": "",
+    "CODE_NAME": "",
+    "SDK_VERSION": "",
+    "GENERATOR_VERSION": "",
+    "ISP_VERSION": "",
+    "ISP_BRANCH": "",
+    "COMM_PROTOCOL": "1.0",
+    "ROUTES": {
+        "ROUTE": [
+            {
+                "ID": "Route 0",
+                "NUMBER": 0,
+                "DEFAULT": true
+            }
+        ]
+    },
+    "PARAMETERS": {
+        "PARAM": [
+            {
+                "KEY": "Vendor",
+                "VALUE": "CVITEK"
+            }
+        ]
+    }
+},

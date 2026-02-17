@@ -1,0 +1,8 @@
+config BR2_PACKAGE_OOBE
+    bool "oobe"
+    default y
+    select BR2_PACKAGE_LIBHV
+    help
+      Out-of-Box Experience (OOBE) web interface for initial device setup.
+      Provides a user-friendly web interface for configuring the device
+      on first boot, including network settings and basic configuration.

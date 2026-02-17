@@ -1,0 +1,151 @@
+/dts-v1/;
+#include "cv181x_base_riscv.dtsi"
+/*#include "cv181x_asic_qfn.dtsi"*/
+/*#include "cv181x_asic_sd.dtsi"*/
+#include "cv181x_default_memmap.dtsi"
+
+&sd {
+	no-1-8-v;
+	max-frequency = <50000000>;
+};
+
+&emmc {
+    max-frequency = <50000000>;
+};
+
+&mipi_rx{
+	/delete-property/ snsr-reset;
+};
+
+&mipi_tx {
+	/delete-property/ reset-gpio;
+	/delete-property/ pwm-gpio;
+	/delete-property/ power-ct-gpio;
+};
+
+&dac{
+	/delete-property/ mute-gpio-r;
+};
+
+&portc {
+	#interrupt-cells = <2>;
+};
+
+&spi0 {
+	status = "okay";
+	num-cs = <1>;
+	cs-gpios = <&porta 12 0>;
+
+	mcp2518fd: mcp2518fd@0 {
+		reg = <0>;
+		compatible = "microchip,mcp2518fd";
+		spi-max-frequency = <10000000>;
+		clocks = <&mcp2518fd_osc>;
+		interrupts = <12 IRQ_TYPE_LEVEL_LOW>;
+		interrupt-parent = <&portc>;
+	};
+};
+
+&spi1 {
+	status = "disabled";
+};
+
+&spi2 {
+	status = "disabled";
+};
+
+&spi3 {
+	status = "disabled";
+};
+
+&i2c0 {
+	status = "disabled";
+};
+
+&i2c1 {
+	status = "disabled";
+};
+
+&i2c2 {
+	status = "okay";
+};
+
+&i2c3 {
+	status = "disabled";
+};
+
+&i2c4 {
+	status = "disabled";
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&uart2 {
+	status = "okay";
+};
+
+&uart3 {
+	status = "okay";
+};
+
+&uart4 {
+	status = "okay";
+};
+
+&wifisd {
+	status = "okay";
+};
+
+/ {
+	model = "Seeed reCamera";
+
+	/delete-node/ cvi-spif@10000000;
+	/delete-node/ cv-spinf@4060000;
+
+	leds {
+		compatible = "gpio-leds";
+
+		led0 {
+			label = "red";
+			gpios = <&porta 15 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "heartbeat";
+			default-state = "on";
+		};
+
+		led1 {
+			label = "blue";
+			gpios = <&porte 24 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "mmc0";
+			default-state = "on";
+		};
+
+		led2 {
+			label = "white";
+			gpios = <&porte 0 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+	};
+
+	/delete-node/ bt_pin;
+	/delete-node/ wifi_pin;
+	wifi_pin {
+		compatible = "cvitek,wifi-pin";
+		poweron-gpio = <&porta 30 GPIO_ACTIVE_HIGH>;
+		/*wakeup-gpio = <&porte 8 GPIO_ACTIVE_HIGH>;*/
+	};
+
+	mcp2518fd_osc: mcp2518fd_osc {
+		#clock-cells = <0>;
+		compatible = "fixed-clock";
+		clock-frequency = <40000000>;
+	};
+};
+
+/* Override CV181X cooling configuration for maximum performance */
+&cv181x_cooling {
+	dev-freqs = <850000000 700000000>,     /* CPU 850MHz, TPU 700MHz - Max Performance Test */
+		    <500000000 500000000>,     /* CPU 500MHz, TPU 500MHz - High Performance */
+		    <425000000 400000000>;     /* CPU 425MHz, TPU 400MHz - Medium Performance */
+};

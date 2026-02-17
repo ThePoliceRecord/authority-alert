@@ -1,0 +1,31 @@
+#!/bin/sh
+${CVI_SHOPTS}
+#
+# Start firmware
+#
+export USERDATAPATH=/userdata
+export SYSTEMPATH=/mnt/system
+
+case "$1" in
+  start)
+        if [ -f $USERDATAPATH/auto.sh ]; then
+                usleep 30000
+                . $USERDATAPATH/auto.sh &
+                exit 1
+        fi
+	if [ -f $SYSTEMPATH/auto.sh ]; then
+                usleep 30000
+                . $SYSTEMPATH/auto.sh &
+        fi
+        ;;
+
+  stop)
+        ;;
+  restart|reload)
+        ;;
+  *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+esac
+
+exit $?

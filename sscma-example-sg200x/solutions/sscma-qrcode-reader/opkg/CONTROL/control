@@ -1,0 +1,8 @@
+Package: qr-reader
+Version: 1.0.0
+Architecture: riscv64
+Maintainer: Authority Alert <support@thepolicerecord.com>
+Description: QR code reader for camera pairing
+ Reads QR codes from camera video stream for device pairing
+ and configuration. Uses quirc library for QR detection and
+ FFmpeg for H.264 decoding.

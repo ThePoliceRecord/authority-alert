@@ -1,0 +1,68 @@
+#!/bin/sh
+#
+# ZeroTier One - Software Defined Networking
+#
+
+DAEMON="zerotier-one"
+PIDFILE="/var/lib/zerotier-one/zerotier-one.pid"
+ZEROTIER_HOME="/var/lib/zerotier-one"
+
+# shellcheck source=/dev/null
+[ -r "/etc/default/$DAEMON" ] && . "/etc/default/$DAEMON"
+
+start() {
+	printf "Starting %s: " "$DAEMON"
+	
+	# Ensure TUN device exists
+	if [ ! -c /dev/net/tun ]; then
+		mkdir -p /dev/net
+		mknod /dev/net/tun c 10 200
+		chmod 600 /dev/net/tun
+	fi
+	
+	# Load TUN module if available
+	modprobe tun 2>/dev/null || true
+	
+	# Create state directory
+	mkdir -p "$ZEROTIER_HOME"
+	
+	# Start daemon
+	start-stop-daemon -S -q -b -p "$PIDFILE" \
+		-x /usr/sbin/$DAEMON -- -p"$PIDFILE" "$ZEROTIER_HOME"
+	status=$?
+	if [ "$status" -eq 0 ]; then
+		echo "OK"
+	else
+		echo "FAIL"
+	fi
+	return $status
+}
+
+stop() {
+	printf "Stopping %s: " "$DAEMON"
+	start-stop-daemon -K -q -p "$PIDFILE"
+	status=$?
+	if [ "$status" -eq 0 ]; then
+		rm -f "$PIDFILE"
+		echo "OK"
+	else
+		echo "FAIL"
+	fi
+	return $status
+}
+
+restart() {
+	stop
+	sleep 1
+	start
+}
+
+case "$1" in
+	start|stop|restart)
+		"$1";;
+	reload)
+		restart;;
+	*)
+		echo "Usage: $0 {start|stop|restart|reload}"
+		exit 1
+esac

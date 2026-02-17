@@ -1,0 +1,8 @@
+Package: camera-recorder
+Version: 1.0.0
+Architecture: riscv64
+Maintainer: Seeed Studio
+Description: Camera Recorder for ReCamera
+Priority: optional
+Section: utils
+Source: N/A
