@@ -87,9 +87,12 @@
             echo "  nix run .#flash-recovery      # Flash latest recovery image"
             echo "  nix run .#flash-recovery 0.2.6 # Flash specific version"
             echo ""
-            echo "Submodule Nix flakes (use independently):"
+            echo "Component Nix flakes (use independently):"
             echo "  cd reCamera-OS && nix develop          # SDK build environment"
             echo "  cd sscma-example-sg200x && nix develop # SSCMA development"
+            echo ""
+            echo "Note: Large toolchain files use Git LFS."
+            echo "  git lfs pull  # Fetch toolchains if needed"
             echo ""
             echo "Docker build uses official Ubuntu 20.04 environment"
             echo "and avoids cross-compilation issues."
@@ -151,7 +154,6 @@
                 git config --global --add safe.directory /work
                 git config --global --add safe.directory /work/reCamera-OS
                 cd /work/reCamera-OS
-                git submodule update --init --recursive --depth 1
                 make \$TARGET
               '
               "
@@ -279,71 +281,17 @@
               }
 
               ensure_clean "$PROJECT_ROOT"
-              ensure_clean "$PROJECT_ROOT/reCamera-OS"
-              ensure_clean "$PROJECT_ROOT/sscma-example-sg200x"
 
               ensure_tag_ok_or_prepare "$PROJECT_ROOT"
-              ensure_tag_ok_or_prepare "$PROJECT_ROOT/reCamera-OS"
-              ensure_tag_ok_or_prepare "$PROJECT_ROOT/sscma-example-sg200x"
 
-              # Tag all three repos (annotated tags)
+              # Tag the repo (annotated tag)
               ( cd "$PROJECT_ROOT" && git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null || run git tag -a "$VERSION" -m "$VERSION" )
-              ( cd "$PROJECT_ROOT/reCamera-OS" && git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null || run git tag -a "$VERSION" -m "$VERSION" )
-              ( cd "$PROJECT_ROOT/sscma-example-sg200x" && git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null || run git tag -a "$VERSION" -m "$VERSION" )
 
-              # Push tags
+              # Push tag and branch
               ( cd "$PROJECT_ROOT" && run git push origin "$VERSION" )
-              ( cd "$PROJECT_ROOT/reCamera-OS" && run git push origin "$VERSION" )
-              ( cd "$PROJECT_ROOT/sscma-example-sg200x" && run git push origin "$VERSION" )
-
-              # Push branches where permitted
               ( cd "$PROJECT_ROOT" && run git push origin HEAD ) || true
-              ( cd "$PROJECT_ROOT/sscma-example-sg200x" && run git push origin HEAD ) || true
-
-              # authority-alert-OS usually requires PR for development. Push a release branch and attempt PR/merge via gh.
-              ( cd "$PROJECT_ROOT/reCamera-OS" && {
-                  RELEASE_BRANCH="release/$VERSION"
-                  run git branch -f "$RELEASE_BRANCH" HEAD
-                  run git push -u origin "$RELEASE_BRANCH"
-
-                  echo "Attempting to create+merge PR via gh (if authenticated)..."
-                  if ${pkgs.gh}/bin/gh auth status >/dev/null 2>&1; then
-                    # Create PR (idempotent-ish: if it already exists, gh will error)
-                    run ${pkgs.gh}/bin/gh pr create \
-                      --repo ThePoliceRecord/authority-alert-OS \
-                      --base development \
-                      --head "$RELEASE_BRANCH" \
-                      --title "chore(release): $VERSION" \
-                      --body "Release $VERSION (tags created from top of CHANGELOG)." \
-                      || true
-
-                    # Attempt merge; if branch protection blocks, this will fail and print why.
-                    run ${pkgs.gh}/bin/gh pr merge \
-                      --repo ThePoliceRecord/authority-alert-OS \
-                      --merge \
-                      --delete-branch \
-                      --auto \
-                      "$RELEASE_BRANCH" \
-                      || true
-                  else
-                    echo "gh is not authenticated. Run: gh auth login"
-                    echo "Then open the PR manually: https://github.com/ThePoliceRecord/authority-alert-OS/pull/new/$RELEASE_BRANCH"
-                  fi
-                })
 
               echo "Done. Release version: $VERSION"
-            '');
-          };
-
-          # Initialize git submodules
-          init = {
-            type = "app";
-            program = toString (pkgs.writeShellScript "init-submodules" ''
-              set -e
-              cd reCamera-OS
-              echo "Initializing git submodules..."
-              git submodule update --init --recursive --depth 1
-              echo "Done!"
             '');
           };
 
@@ -633,164 +581,6 @@
               echo ""
               echo "All releases cleaned!"
               echo "Run 'nix run .#ota-stage' to stage a new release."
-            '');
-          };
-
-          # Check submodule status
-          sub-status = {
-            type = "app";
-            program = toString (pkgs.writeShellScript "sub-status" ''
-              echo "============================================="
-              echo "Submodule Status"
-              echo "============================================="
-              echo ""
-              
-              # Check if reCamera-OS exists
-              if [ ! -d "reCamera-OS" ]; then
-                echo "Error: reCamera-OS directory not found"
-                exit 1
-              fi
-              
-              cd reCamera-OS
-              
-              # Show submodule summary
-              git submodule summary
-              echo ""
-              
-              # Show status of submodules
-              echo "Detailed status:"
-              git status --short
-              echo ""
-              
-              # Check for uncommitted changes
-              if git status --porcelain | grep -q .; then
-                echo "Uncommitted changes detected in reCamera-OS submodule"
-                echo "Run 'nix run .#sub-diff' to see details"
-              else
-                echo "reCamera-OS submodule is clean"
-              fi
-            '');
-          };
-
-          # Show submodule diff
-          sub-diff = {
-            type = "app";
-            program = toString (pkgs.writeShellScript "sub-diff" ''
-              cd reCamera-OS
-              echo "============================================="
-              echo "Submodule Changes (git diff)"
-              echo "============================================="
-              echo ""
-              git diff
-            '');
-          };
-
-          # Update submodules to latest commit
-          sub-update = {
-            type = "app";
-            program = toString (pkgs.writeShellScript "sub-update" ''
-              set -e
-              cd reCamera-OS
-              echo "============================================="
-              echo "Updating submodules to latest commits..."
-              echo "============================================="
-              echo ""
-              
-              # Update all submodules recursively
-              git submodule update --remote --recursive --depth 1
-              
-              echo ""
-              echo "Submodules updated!"
-              echo ""
-              echo "New submodule commits:"
-              git submodule status
-            '');
-          };
-
-          # Reset submodules to clean state
-          sub-reset = {
-            type = "app";
-            program = toString (pkgs.writeShellScript "sub-reset" ''
-              set -e
-              cd reCamera-OS
-              echo "============================================="
-              echo "Resetting submodules to clean state..."
-              echo "============================================="
-              echo ""
-              
-              # Reset all submodules
-              git submodule foreach --recursive git reset --hard
-              git submodule foreach --recursive git clean -fdx
-              
-              # Update to the committed state
-              git submodule update --init --recursive --depth 1
-              
-              echo ""
-              echo "Submodules reset to clean state!"
-              git submodule status
-            '');
-          };
-
-          # Commit submodule changes
-          sub-commit = {
-            type = "app";
-            program = toString (pkgs.writeShellScript "sub-commit" ''
-              set -e
-              cd reCamera-OS
-              
-              # Check if there are changes
-              if ! git status --porcelain | grep -q .; then
-                echo "No changes to commit in reCamera-OS submodule"
-                exit 0
-              fi
-              
-              echo "============================================="
-              echo "Committing submodule changes..."
-              echo "============================================="
-              echo ""
-              
-              # Show what will be committed
-              echo "Changes to be committed:"
-              git status --short
-              echo ""
-              
-              # Prompt for commit message if not provided
-              MESSAGE="''${1:-"Update reCamera-OS submodule"}"
-              
-              # Add all changes
-              git add -A
-              
-              # Commit
-              git commit -m "$MESSAGE"
-              
-              echo ""
-              echo "Committed! New commit:"
-              git log -1 --oneline
-              echo ""
-              echo "Remember to commit the parent repo to track this submodule update:"
-              echo "  cd .."
-              echo "  git add reCamera-OS"
-              echo "  git commit -m 'Update reCamera-OS submodule'"
-            '');
-          };
-
-          # Pull latest changes for submodules
-          sub-pull = {
-            type = "app";
-            program = toString (pkgs.writeShellScript "sub-pull" ''
-              set -e
-              cd reCamera-OS
-              echo "============================================="
-              echo "Pulling latest changes for submodules..."
-              echo "============================================="
-              echo ""
-
-              # Pull latest for each submodule
-              git submodule foreach --recursive git pull origin $(git rev-parse --abbrev-ref HEAD)
-
-              echo ""
-              echo "Pull complete!"
-              git submodule status
             '');
           };
 

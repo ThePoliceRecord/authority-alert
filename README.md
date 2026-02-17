@@ -6,9 +6,12 @@ Custom firmware build environment for the reCamera platform, targeting the SG200
 
 This project provides:
 
-- **reCamera-OS**: Custom firmware based on Buildroot 2021.05 for the SG2002 SoC (included as a git submodule)
+- **reCamera-OS**: Custom firmware based on Buildroot 2021.05 for the SG2002 SoC
+- **sscma-example-sg200x**: SSCMA examples and solutions for the SG200X platform
 - **OTA Server**: Local OTA update server for testing firmware deployments
 - **Nix Development Shell**: Reproducible build environment with Docker integration
+
+> **Note**: This is a monorepo. Both `reCamera-OS` and `sscma-example-sg200x` are included as regular directories (not submodules). Large toolchain binaries in `reCamera-OS/host-tools/` are stored using Git LFS.
 
 ### Target Hardware
 
@@ -32,26 +35,16 @@ experimental-features = nix-command flakes
 
 ## Quick Start
 
-### 1. Clone with Submodules
+### 1. Clone the Repository
 
 ```bash
-git clone --recurse-submodules <repo-url>
-cd authority_alert_planning
+git clone <repo-url>
+cd authority-alert
 ```
 
-Or if already cloned:
+> **Note**: This repo uses Git LFS for large files. If you don't have Git LFS installed, run `git lfs install` then `git lfs pull` to fetch the toolchain binaries.
 
-```bash
-git submodule update --init --recursive
-```
-
-### 2. Initialize Submodules
-
-```bash
-nix run .#init
-```
-
-### 3. Enter Development Shell
+### 2. Enter Development Shell
 
 ```bash
 nix develop
@@ -90,18 +83,13 @@ bash docker_build.sh sg2002_recamera_emmc
 |---------|-------------|
 | `nix develop` | Enter the development shell |
 | `nix run .#build` | Build firmware using Docker |
-| `nix run .#init` | Initialize git submodules |
 | `nix run .#clean` | Clean build output directory |
 | `nix run .#ota-stage` | Stage latest build for OTA testing |
 | `nix run .#ota-serve` | Start local OTA server (port 8080) |
 | `nix run .#ota-status` | Show OTA server status and device commands |
 | `nix run .#ota-stop` | Stop the OTA server |
-| `nix run .#sub-status` | **Show submodule status and changes** |
-| `nix run .#sub-diff` | **Show detailed diff of submodule changes** |
-| `nix run .#sub-update` | **Update submodules to latest commits** |
-| `nix run .#sub-reset` | **Reset submodules to clean state** |
-| `nix run .#sub-commit` | **Commit submodule changes** |
-| `nix run .#sub-pull` | **Pull latest changes from submodule remotes** |
+| `nix run .#release` | Cut a release (tag and push) |
+| `nix run .#flash-recovery` | Flash recovery image to SD card |
 
 ## Build Output
 
@@ -168,82 +156,26 @@ Or manually:
 rm -rf reCamera-OS/output
 ```
 
-## Submodule Management
-
-The reCamera-OS directory is a git submodule. Use these commands to manage it:
-
-### Check Submodule Status
-
-```bash
-nix run .#sub-status
-```
-
-Shows:
-- Submodule commit status
-- Uncommitted changes
-- Modified files
-
-### View Submodule Changes
-
-```bash
-nix run .#sub-diff
-```
-
-Shows detailed diff of all changes in the submodule.
-
-### Update Submodules
-
-```bash
-nix run .#sub-update
-```
-
-Updates all submodules to their latest commits from remote.
-
-### Reset Submodules
-
-```bash
-nix run .#sub-reset
-```
-
-Resets submodules to clean state (discards all changes).
-
-### Commit Submodule Changes
-
-```bash
-nix run .#sub-commit "Your commit message"
-```
-
-Commits changes in the reCamera-OS submodule. After this, you must also commit the parent repo:
-
-```bash
-git add reCamera-OS
-git commit -m "Update reCamera-OS submodule"
-```
-
-### Pull Submodule Changes
-
-```bash
-nix run .#sub-pull
-```
-
-Pulls latest changes from submodule remotes.
-
 ## Project Structure
 
 ```
-authority_alert_planning/
+authority-alert/
 ├── flake.nix              # Nix flake configuration
 ├── flake.lock             # Locked dependencies
 ├── README.md              # This file
-├── FLAKE_IMPROVEMENTS.md  # Planned improvements
-├── reCamera-OS/           # Firmware source (git submodule)
+├── .gitattributes         # Git LFS configuration
+├── reCamera-OS/           # Firmware source (inline directory)
 │   ├── docker_build.sh    # Docker build script
 │   ├── .devcontainer/     # Docker image definition
+│   ├── host-tools/        # Toolchains (Git LFS)
 │   └── output/            # Build artifacts (generated)
-└── ota_server/            # Local OTA update server
-    ├── docker-compose.yml
-    ├── prepare_release.sh
-    └── nginx/
+├── sscma-example-sg200x/  # SSCMA solutions (inline directory)
+│   └── solutions/         # Camera apps, supervisor, OOBE
+├── ota_server/            # Local OTA update server
+│   ├── docker-compose.yml
+│   ├── prepare_release.sh
+│   └── nginx/
+└── spec/                  # Project specifications
 ```
 
 ## Troubleshooting
@@ -257,20 +189,13 @@ sudo usermod -aG docker $USER
 # Log out and back in
 ```
 
-### Submodule Issues
+### Git LFS Issues
 
-If submodules are missing or corrupted:
-
-```bash
-git submodule deinit -f --all
-git submodule update --init --recursive
-```
-
-Or use the Nix command:
+If large files appear corrupted or missing:
 
 ```bash
-nix run .#sub-reset
-nix run .#init
+git lfs install
+git lfs pull
 ```
 
 ### NixOS `/bin/bash` Warning

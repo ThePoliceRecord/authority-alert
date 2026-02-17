@@ -90,16 +90,19 @@ Please refer to [Dev Containers](https://marketplace.visualstudio.com/items?item
 - Clone the Repository
 
     ```bash
-    git clone https://github.com/ThePoliceRecord/authority-alert-OS.git -b sg200x-reCamera
-    cd reCamera
-    git submodule init
-    git submodule update --depth 1
+    # Clone the monorepo (includes reCamera-OS and sscma-example-sg200x)
+    git clone https://github.com/ThePoliceRecord/authority-alert.git
+    cd authority-alert
+
+    # If using Git LFS, pull large files
+    git lfs pull
     ```
 
-- Update Submodules (optional)
+    Or if building reCamera-OS standalone:
 
     ```bash
-    ./scripts/repo_clone.sh --gitpull external/subtree.xml
+    git clone https://github.com/ThePoliceRecord/authority-alert-OS.git -b development
+    cd authority-alert-OS
     ```
 
 #### 2.3.3 Build

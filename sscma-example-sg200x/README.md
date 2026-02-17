@@ -2,66 +2,61 @@
 
 Development environment and examples for the SSCMA (Seeed SenseCraft Model Assistant) on SG200X RISC-V platforms.
 
+> **Note**: This directory is part of the `authority-alert` monorepo. The SDK from `reCamera-OS/` (sibling directory) is automatically available.
+
 ## Quick Start
 
-This project uses Nix flakes for a fully reproducible development environment. The reCamera-OS SDK is automatically built from the local reCamera-OS flake (if available in [`../reCamera-OS/`](../reCamera-OS/)).
+This project uses Nix flakes for a fully reproducible development environment. The reCamera-OS SDK is automatically built from the local reCamera-OS directory.
 
 ### Prerequisites
 
 - **Nix** with flakes enabled ([Install Nix](https://nixos.org/download.html))
 - **Docker** daemon running (required for SDK build)
-- **~30GB disk space** for SDK build artifacts  
+- **~30GB disk space** for SDK build artifacts
 - **1-2 hours** for first-time SDK build (cached thereafter)
-- **reCamera-OS** repository cloned to [`../reCamera-OS/`](../reCamera-OS/) (recommended)
 
 ### Setup
 
 ```bash
-# Clone both repositories (recommended layout)
-cd ~/projects
-git clone https://github.com/ThePoliceRecord/authority-alert-OS.git reCamera-OS
-git clone <sscma-example-repo-url> sscma-example-sg200x
+# Clone the monorepo
+git clone https://github.com/ThePoliceRecord/authority-alert.git
+cd authority-alert
 
-# Enter development environment
+# Pull Git LFS files (toolchains)
+git lfs pull
+
+# Enter development environment (from sscma-example-sg200x)
 cd sscma-example-sg200x
 nix develop
 ```
 
 ## How It Works
 
-### Architecture with Local reCamera-OS Flake
+### Architecture (Monorepo)
+
+Since this is part of the `authority-alert` monorepo, the reCamera-OS SDK is always available as a sibling directory:
 
 ```mermaid
 graph TD
     A[nix develop] --> B[Load sscma-example-sg200x/flake.nix]
-    B --> C{Check ../reCamera-OS/}
-    C -->|Found| D[Use local reCamera-OS flake]
-    C -->|Not Found| E[Fallback to GitHub]
-    D --> F[reCamera-OS/flake.nix]
-    F --> G[Build SDK via docker_build.sh]
-    G --> H[Cache SDK in Nix store]
-    H --> I[Provide to dev environment]
-    E --> J[Build inline from GitHub]
-    J --> H
+    B --> C[Use ../reCamera-OS/]
+    C --> D[reCamera-OS/flake.nix]
+    D --> E[Build SDK via docker_build.sh]
+    E --> F[Cache SDK in Nix store]
+    F --> G[Provide to dev environment]
 ```
 
-### Three-Tier SDK Resolution
+### SDK Resolution
 
-1. **Local reCamera-OS Flake** (Preferred)
-   - Uses `../reCamera-OS/flake.nix` if available
+1. **Local reCamera-OS** (Always available in monorepo)
+   - Uses `../reCamera-OS/flake.nix`
    - Builds SDK using reCamera-OS's own flake
-   - Allows customizing reCamera-OS build
    - Shared cache between projects
 
 2. **Existing Local Build** (Fast)
    - If `../reCamera-OS/output/sg2002_recamera_emmc/` exists
    - Reuses already-built SDK
    - No rebuild needed
-
-3. **GitHub Source** (Fallback)
-   - Fetches reCamera-OS from GitHub
-   - Builds SDK inline
-   - Used when `../reCamera-OS/` doesn't exist
 
 ### First Run Timeline
 
@@ -80,17 +75,10 @@ Building SDK (first time: 1-2 hours)...
 
 ### Updating the SDK
 
-#### If using local reCamera-OS:
-```bash
-cd ../reCamera-OS
-git pull
-# SDK will rebuild automatically on next `nix develop`
-```
+The SDK is built from `../reCamera-OS/`. To update:
 
-#### If using GitHub source:
 ```bash
-# Update flake inputs
-nix flake update
+# Rebuild SDK after changes to reCamera-OS
 nix develop --rebuild
 ```
 
@@ -174,19 +162,12 @@ cd ../reCamera-OS
 
 The Nix environment will automatically detect and use this build.
 
-### reCamera-OS Flake Targets
+### Build from Monorepo Root
 
-The [`reCamera-OS/flake.nix`](../reCamera-OS/flake.nix:1) supports multiple targets:
+You can also build from the monorepo root:
 ```bash
-cd ../reCamera-OS
-
-# Build different targets
-nix build .#sdk-sg2002_recamera_emmc
-nix build .#sdk-sg2002_recamera_sd
-nix build .#sdk-sg2002_xiao_sd
-
-# Enter reCamera-OS dev environment
-nix develop
+cd ..  # authority-alert/
+nix run .#build
 ```
 
 ## Binary Cache Setup (For Teams)
@@ -212,22 +193,6 @@ nixConfig = {
 ```
 
 ## Troubleshooting
-
-### "Cannot find reCamera-OS flake"
-
-```bash
-Error: Cannot find flake '../reCamera-OS'
-```
-
-**Solution:** Clone reCamera-OS or use GitHub fallback:
-```bash
-# Option A: Clone locally (recommended)
-cd ..
-git clone https://github.com/ThePoliceRecord/authority-alert-OS.git reCamera-OS
-
-# Option B: Modify flake to use GitHub only
-# Edit inputs.recamera-os.url in flake.nix
-```
 
 ### "SDK not found" in Development Environment
 
@@ -274,54 +239,46 @@ rm -rf output/
 
 **Solution:**
 ```bash
-# Update reCamera-OS
-cd ../reCamera-OS
-git pull
-
 # Force rebuild from sscma-example
-cd ../sscma-example-sg200x
 nix develop --rebuild
 
-# Or rebuild SDK directly
-cd ../reCamera-OS
-nix build .#sdk-sg2002_recamera_emmc --rebuild
+# Or rebuild SDK from monorepo root
+cd ..
+nix run .#build
 ```
 
 ### Manual Build vs Nix Build
 
-If you built reCamera-OS manually but want to use it with Nix:
+If you built reCamera-OS manually, Nix will detect and use it:
 ```bash
 # Manual build
 cd ../reCamera-OS
 ./docker_build.sh sg2002_recamera_emmc
 
-# The Nix environment will automatically detect output/sg2002_recamera_emmc/
-cd ../sscma-example-sg200x
+# The Nix environment will detect output/sg2002_recamera_emmc/
 nix develop  # Will use existing build
 ```
 
 ## Project Structure
 
 ```
-sscma-example-sg200x/
-├── flake.nix          # Main flake (uses OS SDK repo if present)
-├── flake.lock         # Locked dependency versions
-├── solutions/         # Example applications
-│   └── helloworld/    # Basic example
-├── components/        # Reusable components
-├── cmake/             # CMake helpers
-├── scripts/           # Build and deploy scripts
-└── docs/              # Documentation
-    ├── oobe_spec.md
-    ├── oobe_programming_spec.md
-    └── oobe_40hr_plan.md
-
-../authority-alert-OS/ # OS SDK repository (sibling directory, preferred)
-../reCamera-OS/        # Legacy name (also supported)
-├── flake.nix          # OS flake (builds SDK)
-├── docker_build.sh    # Docker-based build script
-├── Makefile           # Build system entry
-└── output/            # Build artifacts (git-ignored)
+authority-alert/                    # Monorepo root
+├── flake.nix                       # Main Nix flake
+├── reCamera-OS/                    # OS/SDK (inline directory)
+│   ├── docker_build.sh
+│   ├── Makefile
+│   ├── host-tools/                 # Toolchains (Git LFS)
+│   └── output/                     # Build artifacts
+└── sscma-example-sg200x/           # This directory
+    ├── flake.nix                   # SSCMA Nix flake
+    ├── solutions/                  # Example applications
+    │   ├── camera-detector/
+    │   ├── camera-streamer/
+    │   ├── supervisor/
+    │   └── oobe/
+    ├── components/                 # Reusable components
+    ├── cmake/                      # CMake helpers
+    └── scripts/                    # Build and deploy scripts
 ```
 
 ## Code Style
