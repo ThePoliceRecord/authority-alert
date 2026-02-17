@@ -1,0 +1,20 @@
+#!/bin/sh
+DAEMON=/usr/local/bin/camera-detector
+NAME=camera-detector
+PIDFILE=/var/run/$NAME.pid
+MODEL_FILE=/userdata/Models/model.cvimodel
+
+start() {
+    [ ! -f "$MODEL_FILE" ] && return 1
+    pidof camera-streamer >/dev/null 2>&1 || return 1
+    [ -f $PIDFILE ] && kill -0 $(cat $PIDFILE) 2>/dev/null && return 0
+    start-stop-daemon -S -q -m -b -p $PIDFILE --exec $DAEMON -- "$MODEL_FILE"
+}
+stop() {
+    start-stop-daemon -K -q -p $PIDFILE; rm -f $PIDFILE
+}
+case "$1" in
+    start|stop) "$1" ;;
+    restart) stop; sleep 1; start ;;
+    *) echo "Usage: $0 {start|stop|restart}" ;;
+esac

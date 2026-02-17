@@ -17,6 +17,7 @@ import (
 
 	"supervisor/internal/cameradb"
 	"supervisor/internal/config"
+	"supervisor/internal/detector"
 	"supervisor/internal/detectionqueue"
 	"supervisor/internal/handler"
 	"supervisor/internal/modelupdate"
@@ -128,6 +129,16 @@ func main() {
 	modelUpdateManager := modelupdate.GetManager()
 	modelUpdateManager.Start(context.Background())
 
+	// Start detector manager
+	detectorManager := detector.GetManager()
+	detectorManager.Start(context.Background())
+
+	// Hook model updates to detector restart
+	modelUpdateManager.SetOnModelUpdated(func(version float64) {
+		logger.Info("Model updated to v%.1f, restarting detector", version)
+		detectorManager.RestartWithNewModel(version)
+	})
+
 	// Start detection uploader (queues detections from camera-detector for platform upload)
 	// Pass NTP manager so uploader waits for time sync before uploading
 	detectionUploader := detectionqueue.GetUploader()
@@ -160,6 +171,9 @@ func main() {
 
 	// Stop detection uploader
 	detectionUploader.Stop()
+
+	// Stop detector manager
+	detectorManager.Stop(context.Background())
 
 	// Stop model update manager
 	modelUpdateManager.Stop()

@@ -68,6 +68,7 @@ type Manager struct {
 	modelFile        string
 	cancel           context.CancelFunc
 	done             chan struct{}
+	onModelUpdated   func(version float64)
 }
 
 var (
@@ -168,6 +169,13 @@ func (m *Manager) GetStatus() *Status {
 // CheckNow triggers an immediate model update check.
 func (m *Manager) CheckNow(ctx context.Context) error {
 	return m.checkForUpdates(ctx)
+}
+
+// SetOnModelUpdated sets a callback to be invoked after a model is downloaded.
+func (m *Manager) SetOnModelUpdated(callback func(float64)) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.onModelUpdated = callback
 }
 
 func (m *Manager) checkLoop(ctx context.Context) {
@@ -433,7 +441,13 @@ func (m *Manager) downloadModel(ctx context.Context, presignedURL, modelPath str
 	m.updateAvailable = false
 	m.modelFile = finalPath
 	m.downloadProgress = 100
+	callback := m.onModelUpdated
 	m.mu.Unlock()
+
+	// Notify listeners of model update
+	if callback != nil {
+		go callback(version)
+	}
 
 	return nil
 }
