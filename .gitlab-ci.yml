@@ -8,7 +8,6 @@ stages:
 variables:
   TARGET: "sg2002_recamera_emmc"
   DOCKER_DRIVER: overlay2
-  GIT_SUBMODULE_STRATEGY: recursive
 
 default:
   image: docker:24.0.5
@@ -21,7 +20,7 @@ default:
 prepare:
   stage: prepare
   script:
-    - git submodule update --init --recursive --depth 1
+    - echo "No submodules to initialize"
   artifacts:
     expire_in: 2 hrs
     paths:
