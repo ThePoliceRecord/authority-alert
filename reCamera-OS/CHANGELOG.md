@@ -1,4 +1,22 @@
-## 0.2.8 (2026-02-16)
+## 0.2.8 (2026-02-17)
+
+### Monorepo Structure
+
+- **Inlined Dependencies:**
+    - Added `sscma-micro` library (from Seeed-Studio/SSCMA-Micro @ c7ed52a)
+      - Provides ML model inference engine for camera-detector
+      - Files: [`sscma-example-sg200x/components/sscma-micro/sscma-micro/`](sscma-example-sg200x/components/sscma-micro/sscma-micro/)
+    - Added `cvikernel` directory (from sophgo/cvikernel)
+      - TPU kernel library for CV181X
+      - Files: [`cvikernel/`](cvikernel/)
+    - Added `ramdisk` directory (from sophgo/ramdisk sg200x-dev)
+      - Recovery and boot ramdisk
+      - Files: [`ramdisk/`](ramdisk/)
+
+- **Build System Fixes:**
+    - Fixed Buildroot package paths for monorepo structure
+      - Updated `SITE` paths from `../../sscma-example-sg200x` to `../../../../sscma-example-sg200x`
+      - Files: [`oobe.mk`](reCamera-OS/external/br2-external/oobe/oobe.mk), [`sscma-camera-detector.mk`](reCamera-OS/external/br2-external/sscma-camera-detector/sscma-camera-detector.mk), [`sscma-camera-recorder.mk`](reCamera-OS/external/br2-external/sscma-camera-recorder/sscma-camera-recorder.mk), [`sscma-camera-streamer.mk`](reCamera-OS/external/br2-external/sscma-camera-streamer/sscma-camera-streamer.mk), [`sscma-supervisor.mk`](reCamera-OS/external/br2-external/sscma-supervisor/sscma-supervisor.mk)
 
 ### sscma-example-sg200x
 
