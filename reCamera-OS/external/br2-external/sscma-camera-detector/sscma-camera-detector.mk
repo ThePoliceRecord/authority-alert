@@ -5,7 +5,7 @@
 ################################################################################
 
 SSCMA_CAMERA_DETECTOR_VERSION = 1.0
-SSCMA_CAMERA_DETECTOR_SITE = $(TOPDIR)/../../sscma-example-sg200x
+SSCMA_CAMERA_DETECTOR_SITE = $(TOPDIR)/../../../../sscma-example-sg200x
 SSCMA_CAMERA_DETECTOR_SITE_METHOD = local
 SSCMA_CAMERA_DETECTOR_LICENSE = Apache-2.0
 SSCMA_CAMERA_DETECTOR_DEPENDENCIES = jpeg

@@ -5,7 +5,7 @@
 ################################################################################
 
 SSCMA_SUPERVISOR_VERSION = 1.0
-SSCMA_SUPERVISOR_SITE = $(TOPDIR)/../../sscma-example-sg200x
+SSCMA_SUPERVISOR_SITE = $(TOPDIR)/../../../../sscma-example-sg200x
 SSCMA_SUPERVISOR_SITE_METHOD = local
 SSCMA_SUPERVISOR_LICENSE = Apache-2.0
 

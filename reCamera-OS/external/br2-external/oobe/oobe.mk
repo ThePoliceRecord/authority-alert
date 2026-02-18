@@ -5,7 +5,7 @@
 ################################################################################
 
 OOBE_VERSION = 1.0
-OOBE_SITE = $(TOPDIR)/../../sscma-example-sg200x
+OOBE_SITE = $(TOPDIR)/../../../../sscma-example-sg200x
 OOBE_SITE_METHOD = local
 OOBE_LICENSE = Apache-2.0
 

@@ -5,7 +5,7 @@
 ################################################################################
 
 SSCMA_VIDEO_RECORDER_VERSION = 1.0
-SSCMA_VIDEO_RECORDER_SITE = $(TOPDIR)/../../sscma-example-sg200x
+SSCMA_VIDEO_RECORDER_SITE = $(TOPDIR)/../../../../sscma-example-sg200x
 SSCMA_VIDEO_RECORDER_SITE_METHOD = local
 SSCMA_VIDEO_RECORDER_LICENSE = Apache-2.0
 
