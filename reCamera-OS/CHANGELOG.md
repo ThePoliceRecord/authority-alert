@@ -1,3 +1,14 @@
+## 0.2.11 (2026-02-23)
+
+### sscma-example-sg200x
+
+- **Bug Fixes:**
+
+    - **Fix OTA download timeout on slow connections**
+      - The HTTP client used a 60-second end-to-end timeout that covered the entire request including reading the response body; firmware downloads over slow WiFi would exceed this and fail with "context deadline exceeded"
+      - Replaced overall `Client.Timeout` with per-phase timeouts (dial, TLS handshake, response headers) so connections still fail fast but body reads can take as long as needed
+      - Files: [`upgrade/upgrade.go`](sscma-example-sg200x/solutions/supervisor/internal/upgrade/upgrade.go)
+
 ## 0.2.10 (2026-02-23)
 
 ### sscma-example-sg200x

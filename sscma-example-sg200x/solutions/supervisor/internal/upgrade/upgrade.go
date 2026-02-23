@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -1574,11 +1575,16 @@ func newHTTPClient(timeout time.Duration, noRedirect bool, insecureTLS bool) *ht
 			// and our custom TPR CA certificate
 			cloned.TLSClientConfig = &tls.Config{RootCAs: tlsutil.PlatformCertPool()}
 		}
+		// Set per-phase timeouts so connections fail fast but large
+		// downloads aren't killed by the overall client timeout.
+		cloned.DialContext = (&net.Dialer{Timeout: timeout}).DialContext
+		cloned.TLSHandshakeTimeout = timeout
+		cloned.ResponseHeaderTimeout = timeout
 		transport = cloned
 	} else {
 		transport = http.DefaultTransport
 	}
-	client := &http.Client{Timeout: timeout, Transport: transport}
+	client := &http.Client{Transport: transport} // no overall Timeout — body reads can take as long as needed
 	if noRedirect {
 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
