@@ -2,6 +2,7 @@ import {
   WifiConnectedStatus,
   WifiIpAssignmentRule,
   NetworkStatus,
+  APMode,
 } from "@/enum/network";
 
 interface IWifiInfo {
@@ -22,4 +23,17 @@ interface IWifiInfo {
 interface IConnectParams {
   ssid: string;
   password?: string;
+}
+
+interface IAPConfig {
+  mode: APMode;
+  ssid: string;
+  password: string;
+  running: boolean;
+}
+
+interface ISetAPConfigParams {
+  mode: APMode;
+  ssid: string;
+  password: string;
 }

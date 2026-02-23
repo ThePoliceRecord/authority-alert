@@ -10,7 +10,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -296,15 +295,6 @@ func (u *Uploader) upload(item *DetectionItem) error {
 		return fmt.Errorf("no image data or path available")
 	}
 
-	// Debug: log what we're uploading
-	isJPEG := len(imageData) >= 2 && imageData[0] == 0xFF && imageData[1] == 0xD8
-	logger.Info("DEBUG upload: size=%d isJPEG=%v class=%s conf=%.2f",
-		len(imageData), isJPEG, item.ClassLabel, item.ConfidenceScore)
-	if len(imageData) >= 4 {
-		logger.Info("DEBUG upload: magic=0x%02x%02x%02x%02x",
-			imageData[0], imageData[1], imageData[2], imageData[3])
-	}
-
 	// Build multipart request
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
@@ -318,37 +308,31 @@ func (u *Uploader) upload(item *DetectionItem) error {
 		return fmt.Errorf("failed to write image data: %w", err)
 	}
 
-	// Add detection fields
+	// Add detection fields (backend reads: bounding_box, class_label, confidence_score, attributes)
 	if item.BoundingBox != "" {
 		writer.WriteField("bounding_box", item.BoundingBox)
 	}
 	if item.ClassLabel != "" {
 		writer.WriteField("class_label", item.ClassLabel)
 	}
-	// ConfidenceScore is already 0-100 percentage (converted in processDetection)
-	writer.WriteField("confidence_score", fmt.Sprintf("%.2f", item.ConfidenceScore))
+	writer.WriteField("confidence_score", fmt.Sprintf("%.4f", item.ConfidenceScore))
 
-	// Add full detections array if present
+	// Pack extra fields into attributes JSON (backend stores as JSONProperty on AADetection)
+	attrs := map[string]interface{}{}
 	if item.Detections != "" {
-		writer.WriteField("detections", item.Detections)
+		attrs["detections"] = json.RawMessage(item.Detections)
 	}
-
-	// Add timestamp (capture time from camera)
-	writer.WriteField("timestamp", item.Timestamp.Format(time.RFC3339))
-
-	// Add trusted timestamp chain fields (for legal evidence)
+	attrs["timestamp"] = item.Timestamp.Format(time.RFC3339)
 	if item.FrameHash != "" {
-		writer.WriteField("frame_hash", item.FrameHash)
+		attrs["frame_hash"] = item.FrameHash
 	}
 	if item.TimestampToken != "" {
-		writer.WriteField("timestamp_token", item.TimestampToken)
+		attrs["timestamp_token"] = item.TimestampToken
 	}
-	// Indicate whether TSA verification succeeded
-	if item.TSAStatus == "signed" {
-		writer.WriteField("timestamp_verified", "true")
-	} else {
-		writer.WriteField("timestamp_verified", "false")
-	}
+	attrs["timestamp_verified"] = item.TSAStatus == "signed"
+
+	attrsJSON, _ := json.Marshal(attrs)
+	writer.WriteField("attributes", string(attrsJSON))
 
 	if err := writer.Close(); err != nil {
 		return fmt.Errorf("failed to close multipart writer: %w", err)
@@ -365,7 +349,6 @@ func (u *Uploader) upload(item *DetectionItem) error {
 	req.Header.Set("User-Agent", "recamera-supervisor")
 
 	// Send request
-	logger.Info("DEBUG upload: sending to %s", apiURL+"/api/v1/cameras/detection/")
 	resp, err := u.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)
@@ -374,8 +357,6 @@ func (u *Uploader) upload(item *DetectionItem) error {
 
 	// Read response body for error messages
 	body, _ := io.ReadAll(resp.Body)
-
-	logger.Info("DEBUG upload: response status=%d body=%s", resp.StatusCode, string(body))
 
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf("upload failed with status %d: %s", resp.StatusCode, string(body))
@@ -448,19 +429,5 @@ func getAPIKey() (string, error) {
 
 // getPlatformURL gets the platform API base URL
 func getPlatformURL() string {
-	platformInfo := device.GetPlatformInfo()
-	if platformInfo == "" {
-		return "https://dev.thepolicerecord.com"
-	}
-
-	var data map[string]interface{}
-	if err := json.Unmarshal([]byte(platformInfo), &data); err != nil {
-		return "https://dev.thepolicerecord.com"
-	}
-
-	if url, ok := data["platform_url"].(string); ok && url != "" {
-		return strings.TrimRight(url, "/")
-	}
-
-	return "https://dev.thepolicerecord.com"
+	return device.GetPlatformURL()
 }

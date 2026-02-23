@@ -25,7 +25,7 @@ const Main: React.FC<Props> = ({ children }) => {
         systemUpdateState.status != UpdateStatus.NeedUpdate
       ) {
         const response = await fetch(
-          "https://api.github.com/repos/ThePoliceRecord/authority-alert-OS/releases/latest"
+          "https://api.github.com/repos/ThePoliceRecord/authority-alert/releases/latest"
         );
         if (response.ok && response.status == 200) {
           const data = await response.json();
@@ -87,13 +87,13 @@ const Main: React.FC<Props> = ({ children }) => {
           here:
         </p>
         <a
-          href="https://github.com/ThePoliceRecord/authority-alert-OS/releases"
+          href="https://github.com/ThePoliceRecord/authority-alert/releases"
           style={{
             color: "#4096ff",
           }}
           target="_blank"
         >
-          https://github.com/ThePoliceRecord/authority-alert-OS/releases
+          https://github.com/ThePoliceRecord/authority-alert/releases
         </a>
       </Modal>
     </>

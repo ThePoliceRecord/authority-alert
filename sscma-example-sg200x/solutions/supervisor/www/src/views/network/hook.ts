@@ -6,14 +6,17 @@ import {
   disconnectWifiApi,
   connectWifiApi,
   forgetWiFiApi,
+  getAPConfigApi,
+  setAPConfigApi,
 } from "@/api/network";
 import {
   WifiConnectedStatus,
   NetworkStatus,
   WifiAuth,
   WifiEnable,
+  APMode,
 } from "@/enum/network";
-import { IWifiInfo, IConnectParams } from "@/api/network/network";
+import { IWifiInfo, IConnectParams, IAPConfig } from "@/api/network/network";
 import useConfigStore from "@/store/config";
 
 interface FormParams {
@@ -57,6 +60,8 @@ interface IInitialState {
   connectLoading: boolean;
   refreshLoading: boolean;
   initialLoading: boolean;
+  apConfig?: IAPConfig;
+  apLoading: boolean;
 }
 type ActionType = { type: "setState"; payload: Partial<IInitialState> };
 const initialState: IInitialState = {
@@ -80,6 +85,8 @@ const initialState: IInitialState = {
   connectLoading: false,
   refreshLoading: false,
   initialLoading: true,
+  apConfig: undefined,
+  apLoading: false,
 };
 function reducer(state: IInitialState, action: ActionType): IInitialState {
   switch (action.type) {
@@ -365,6 +372,33 @@ export function useData() {
       });
     }
   };
+  const getAPConfig = async () => {
+    try {
+      const { data } = await getAPConfigApi();
+      setStates({ apConfig: data });
+    } catch (err) {
+      // AP config not available — leave undefined
+    }
+  };
+
+  const updateAPConfig = async (params: { mode?: APMode; ssid?: string; password?: string }) => {
+    if (!state.apConfig) return;
+    const updated = {
+      mode: params.mode ?? state.apConfig.mode,
+      ssid: params.ssid ?? state.apConfig.ssid,
+      password: params.password ?? state.apConfig.password,
+    };
+    setStates({ apLoading: true });
+    try {
+      await setAPConfigApi(updated);
+      await getAPConfig();
+    } catch (err) {
+      // Error handling
+    } finally {
+      setStates({ apLoading: false });
+    }
+  };
+
   const onHandleOperate = async (type: OperateType) => {
     const info = state.selectedWifiInfo;
     if (!info) return;
@@ -436,6 +470,8 @@ export function useData() {
     }
   }, [state.needRefresh]);
   useEffect(() => {
+    // Load AP config on mount
+    getAPConfig();
     // 清除定时器
     return () => {
       onStopRefreshWifiList();
@@ -454,5 +490,7 @@ export function useData() {
     onClickEthernetItem,
     handleSwitchWifi,
     onRefreshNetworks,
+    getAPConfig,
+    updateAPConfig,
   };
 }

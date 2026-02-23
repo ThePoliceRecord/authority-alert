@@ -1,6 +1,6 @@
 #!/bin/bash
 
-URL_DEFAULT="https://github.com/ThePoliceRecord/authority-alert-OS/releases/latest"
+URL_DEFAULT="https://github.com/ThePoliceRecord/authority-alert/releases/latest"
 
 URL_LIST=("$URL_DEFAULT")
 

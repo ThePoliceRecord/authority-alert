@@ -227,6 +227,11 @@ class SupervisorAPI {
     });
   }
 
+  async syncBrowserTime() {
+    const timestamp = Math.floor(Date.now() / 1000);
+    return this.request('/api/deviceMgr/syncBrowserTime', 'POST', { timestamp }, false);
+  }
+
   async getTimezone() {
     return this.request('/api/deviceMgr/getTimezone');
   }

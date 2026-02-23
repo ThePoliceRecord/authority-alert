@@ -1,6 +1,6 @@
 #!/bin/bash
 
-OFFICIAL_URL="https://github.com/ThePoliceRecord/authority-alert-OS/releases/latest"
+OFFICIAL_URL="https://github.com/ThePoliceRecord/authority-alert/releases/latest"
 
 # Manifest filename - SHA256 only
 SHA256_FILE=sg2002_recamera_emmc_sha256sum.txt

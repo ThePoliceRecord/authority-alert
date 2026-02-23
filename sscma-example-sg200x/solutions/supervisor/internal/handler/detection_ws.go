@@ -173,13 +173,13 @@ func processDetectionMessage(data []byte, uploader *detectionqueue.Uploader) err
 	// Generate unique ID
 	id := generateDetectionID()
 
-	// Convert detections for API (confidence already 0-1, convert to percentage)
+	// Convert detections for API (confidence 0-1 scale, matching backend expectations)
 	detectionsForAPI := make([]map[string]interface{}, len(msg.Detections))
 	for i, det := range msg.Detections {
 		detectionsForAPI[i] = map[string]interface{}{
 			"class_id":    det.ClassID,
 			"class_label": det.ClassLabel,
-			"confidence":  det.Confidence * 100, // Convert to percentage
+			"confidence":  det.Confidence,
 			"bbox":        det.BBox,
 		}
 	}
@@ -192,7 +192,7 @@ func processDetectionMessage(data []byte, uploader *detectionqueue.Uploader) err
 	if len(msg.Detections) > 0 {
 		det := msg.Detections[0]
 		primaryClass = det.ClassLabel
-		primaryConfidence = det.Confidence * 100 // Convert to percentage
+		primaryConfidence = det.Confidence
 		bboxJSON, _ := json.Marshal(det.BBox)
 		primaryBBox = string(bboxJSON)
 	}
@@ -278,7 +278,7 @@ func processDetectionMessage(data []byte, uploader *detectionqueue.Uploader) err
 		}
 	}
 
-	logger.Info("Detection WS: queued %s class=%s conf=%.1f%% size=%d",
+	logger.Info("Detection WS: queued %s class=%s conf=%.4f size=%d",
 		id, primaryClass, primaryConfidence, len(imageData))
 
 	return nil

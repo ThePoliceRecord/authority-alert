@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"supervisor/internal/config"
 	"supervisor/internal/device"
 	"supervisor/internal/tls"
 	"supervisor/pkg/logger"
@@ -244,11 +243,7 @@ func getPlatformCredentials() (secretKey string, err error) {
 }
 
 func platformURL(path string) string {
-	base := strings.TrimSpace(config.Get().TPRPlatformURL)
-	base = strings.TrimRight(base, "/")
-	if base == "" {
-		base = "https://dev.thepolicerecord.com"
-	}
+	base := device.GetPlatformURL()
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}

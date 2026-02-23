@@ -2,6 +2,8 @@ package network
 
 import (
 	"bufio"
+	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
@@ -16,12 +18,27 @@ import (
 
 // Configuration paths
 const (
-	ConfigDir     = "/etc/recamera.conf"
-	STAConfigFile = "/etc/recamera.conf/sta"
-	APConfigFile  = "/etc/recamera.conf/ap"
-	WPAConfFile   = "/etc/wpa_supplicant.conf"
-	HostAPDConf   = "/etc/hostapd_2g4.conf"
+	ConfigDir        = "/etc/recamera.conf"
+	STAConfigFile    = "/etc/recamera.conf/sta"
+	APConfigFile     = "/etc/recamera.conf/ap"
+	APConfigJSONFile = "/etc/recamera.conf/ap_config.json"
+	WPAConfFile      = "/etc/wpa_supplicant.conf"
+	HostAPDConf      = "/etc/hostapd_2g4.conf"
 )
+
+// AP mode constants
+const (
+	APModeAlwaysOn  = "always_on"
+	APModeAlwaysOff = "always_off"
+	APModeAuto      = "auto"
+)
+
+// APConfig represents user-facing access point configuration.
+type APConfig struct {
+	Mode     string `json:"mode"`     // "always_on", "always_off", "auto"
+	SSID     string `json:"ssid"`
+	Password string `json:"password"`
+}
 
 // WiFiManager handles WiFi operations.
 type WiFiManager struct {
@@ -142,8 +159,107 @@ func (m *WiFiManager) StopAP() error {
 	return nil
 }
 
+// readHostapdField reads a key=value field from hostapd_2g4.conf.
+func readHostapdField(key string) string {
+	data, err := os.ReadFile(HostAPDConf)
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, key+"=") {
+			return strings.TrimPrefix(line, key+"=")
+		}
+	}
+	return ""
+}
+
+// updateHostapdConfig writes new SSID and/or password into hostapd_2g4.conf.
+func updateHostapdConfig(ssid, password string) error {
+	data, err := os.ReadFile(HostAPDConf)
+	if err != nil {
+		return fmt.Errorf("read hostapd config: %w", err)
+	}
+	content := string(data)
+	if ssid != "" {
+		content = regexp.MustCompile(`(?m)^ssid=.*$`).ReplaceAllString(content, "ssid="+ssid)
+	}
+	if password != "" {
+		content = regexp.MustCompile(`(?m)^wpa_passphrase=.*$`).ReplaceAllString(content, "wpa_passphrase="+password)
+	}
+	return os.WriteFile(HostAPDConf, []byte(content), 0644)
+}
+
+// GetAPConfig returns the current AP configuration.
+// If a JSON config exists it is used; otherwise values are read from hostapd.
+func (m *WiFiManager) GetAPConfig() APConfig {
+	cfg := APConfig{Mode: APModeAuto}
+
+	data, err := os.ReadFile(APConfigJSONFile)
+	if err == nil {
+		if json.Unmarshal(data, &cfg) == nil {
+			return cfg
+		}
+	}
+
+	// Fallback: read live values from hostapd config
+	cfg.SSID = readHostapdField("ssid")
+	cfg.Password = readHostapdField("wpa_passphrase")
+	return cfg
+}
+
+// SetAPConfig validates, persists and applies a new AP configuration.
+func (m *WiFiManager) SetAPConfig(cfg APConfig) error {
+	// Validate mode
+	switch cfg.Mode {
+	case APModeAlwaysOn, APModeAlwaysOff, APModeAuto:
+	default:
+		return fmt.Errorf("invalid AP mode: %s", cfg.Mode)
+	}
+
+	// Validate SSID (1-32 chars)
+	if len(cfg.SSID) < 1 || len(cfg.SSID) > 32 {
+		return fmt.Errorf("SSID must be 1-32 characters")
+	}
+
+	// Validate password (8-63 chars)
+	if len(cfg.Password) < 8 || len(cfg.Password) > 63 {
+		return fmt.Errorf("password must be 8-63 characters")
+	}
+
+	// Persist JSON config
+	os.MkdirAll(ConfigDir, 0755)
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("marshal AP config: %w", err)
+	}
+	if err := os.WriteFile(APConfigJSONFile, data, 0644); err != nil {
+		return fmt.Errorf("write AP config: %w", err)
+	}
+
+	// Update hostapd config file
+	if err := updateHostapdConfig(cfg.SSID, cfg.Password); err != nil {
+		return fmt.Errorf("update hostapd config: %w", err)
+	}
+
+	// Restart hostapd if it is currently running so changes take effect
+	if system.IsProcessRunning("hostapd") {
+		logger.Info("Restarting hostapd to apply new AP config")
+		m.StopAP()
+		time.Sleep(500 * time.Millisecond)
+		m.StartAP()
+	}
+
+	return nil
+}
+
 // updateAPSSID updates the AP SSID based on MAC address if needed.
 func (m *WiFiManager) updateAPSSID() {
+	// Skip auto-mutation if user has explicitly configured AP via JSON
+	if _, err := os.Stat(APConfigJSONFile); err == nil {
+		return
+	}
+
 	data, err := os.ReadFile(HostAPDConf)
 	if err != nil {
 		return
@@ -196,13 +312,21 @@ func (m *WiFiManager) StartWiFi() (sta int, ap int, err error) {
 		go m.StartSTA()
 	}
 
-	// Read AP config
-	apData, err := os.ReadFile(APConfigFile)
-	if err != nil {
+	// Read AP config — prefer JSON config, fall back to legacy flag file
+	apCfg := m.GetAPConfig()
+	switch apCfg.Mode {
+	case APModeAlwaysOn:
 		ap = 1
-		os.WriteFile(APConfigFile, []byte("1"), 0644)
-	} else {
-		ap, _ = strconv.Atoi(strings.TrimSpace(string(apData)))
+	case APModeAlwaysOff:
+		ap = 0
+	default: // "auto" or missing
+		apData, readErr := os.ReadFile(APConfigFile)
+		if readErr != nil {
+			ap = 1
+			os.WriteFile(APConfigFile, []byte("1"), 0644)
+		} else {
+			ap, _ = strconv.Atoi(strings.TrimSpace(string(apData)))
+		}
 	}
 
 	// Start AP if enabled

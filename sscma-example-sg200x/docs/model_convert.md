@@ -38,7 +38,7 @@ More details please refer to [tpu-mlir](https://github.com/sophgo/tpu-mlir).
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/ThePoliceRecord/authority-alert-OS
+git clone https://github.com/ThePoliceRecord/authority-alert
 cd sscma-example-sg200x
 git submodule update --init
 ```
@@ -53,7 +53,7 @@ mkdir workspace
 To get started, clone the repository and initialize the submodules:
 
 ```bash
-git clone https://github.com/ThePoliceRecord/authority-alert-OS
+git clone https://github.com/ThePoliceRecord/authority-alert
 cd sscma-example-sg200x
 git submodule update --init
 ```

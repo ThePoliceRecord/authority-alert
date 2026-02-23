@@ -150,9 +150,8 @@ class OOBEApp {
   static WIFI_SCAN_RETRY_DELAY = 2000; // milliseconds
 
   // Platform API base URL
-  // Default to dev environment for testing
   // Override at runtime by setting window.TPR_PLATFORM_URL before this script loads.
-  static PLATFORM_API_URL = window.TPR_PLATFORM_URL || 'https://dev.thepolicerecord.com';
+  static PLATFORM_API_URL = window.TPR_PLATFORM_URL || 'https://thepolicerecord.com';
 
   constructor() {
     // Initialize secure token manager
@@ -183,6 +182,18 @@ class OOBEApp {
   async init() {
     console.log('Initializing OOBE...');
     this.hideLoading();
+
+    // Sync browser time to device before anything else (no auth needed).
+    // On devices without a battery-backed RTC the clock is wrong on boot;
+    // NTP can't fix it until WiFi is configured later in the OOBE flow.
+    try {
+      const timeResult = await this.api.syncBrowserTime();
+      if (timeResult.success && timeResult.data?.synced) {
+        console.log('Browser time synced to device');
+      }
+    } catch (e) {
+      console.warn('Browser time sync failed (non-fatal):', e.message);
+    }
 
     // Check if we have a stored token and validate it
     const storedToken = this.tokenManager.getToken('authToken');
@@ -1392,11 +1403,9 @@ class OOBEApp {
     if (status.status === 'claimed') {
       this.stopCodePolling();
       this.showInternetWarning(false);
-      // Show success and continue button
-      document.getElementById('code-registration-section').classList.add('hidden');
-      document.getElementById('registration-success').classList.remove('hidden');
-      document.getElementById('continue-after-registration-btn').classList.remove('hidden');
       console.log('Code registration completed:', status.result);
+      // Complete OOBE immediately
+      this.exitToSupervisorUI();
     } else if (status.status === 'error' || status.status === 'expired') {
       this.stopCodePolling();
       this.showInternetWarning(false);

@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Button, Form, Switch, Input, Modal, Empty, message, Spin } from "antd";
+import { useState } from "react";
+import { Button, Form, Switch, Input, Modal, Empty, message, Radio } from "antd";
 import { LoadingOutlined, InfoCircleOutlined, ReloadOutlined, WifiOutlined, GlobalOutlined, EditOutlined, SaveOutlined } from "@ant-design/icons";
 import WarnImg from "@/assets/images/warn.png";
 import LockImg from "@/assets/images/svg/lock.svg";
@@ -12,26 +12,18 @@ import Wifi4 from "@/assets/images/svg/wifi_4.svg";
 import { useData, OperateType, FormType } from "./hook";
 import useConfigStore from "@/store/config";
 import { updateDeviceInfoApi, queryDeviceInfoApi } from "@/api/device/index";
-import { hostnameValidate } from "@/utils/validate";
-
 import {
   WifiAuth,
   NetworkStatus,
   WifiIpAssignmentRule,
   WifiEnable,
+  APMode,
 } from "@/enum/network";
 import { requiredTrimValidate } from "@/utils/validate";
 
 // Maximum visible WiFi networks before scrolling
 const MAX_VISIBLE_WIFI_NETWORKS = 3;
 const WIFI_ITEM_HEIGHT = 64; // Approximate height of each WiFi item in pixels
-
-// Loading spinner style with explicit animation
-const spinnerStyle = {
-  fontSize: 48, 
-  color: '#9be564',
-  animation: 'spin 1s linear infinite',
-};
 
 // Smaller spinner for inline loading
 const smallSpinnerStyle = {
@@ -114,6 +106,7 @@ function Network() {
     onClickEthernetItem,
     handleSwitchWifi,
     onRefreshNetworks,
+    updateAPConfig,
   } = useData();
 
   // Hostname editing state
@@ -122,6 +115,12 @@ function Network() {
   const [hostnameValue, setHostnameValue] = useState(deviceInfo?.deviceName || '');
   const [hostnameSaving, setHostnameSaving] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
+
+  // AP editing state
+  const [apSsidEditing, setApSsidEditing] = useState(false);
+  const [apSsidValue, setApSsidValue] = useState('');
+  const [apPasswordEditing, setApPasswordEditing] = useState(false);
+  const [apPasswordValue, setApPasswordValue] = useState('');
 
   const handleHostnameSave = async () => {
     const trimmedValue = hostnameValue.trim();
@@ -307,6 +306,204 @@ function Network() {
           )}
         </div>
       </div>
+
+      {/* Access Point Section */}
+      {state.apConfig && (
+        <div className="mb-24">
+          <div className="font-bold text-16 mb-12 text-platinum/70 uppercase tracking-wide">Access Point</div>
+          <div className="p-20" style={translucentCardStyle}>
+            {/* Status */}
+            <div className="flex items-center mb-16">
+              <div className="w-40 h-40 rounded-full flex items-center justify-center mr-16" style={{ backgroundColor: state.apConfig.running ? 'rgba(155, 229, 100, 0.2)' : 'rgba(224, 224, 224, 0.1)' }}>
+                <WifiOutlined style={{ fontSize: 20, color: state.apConfig.running ? '#9be564' : '#e0e0e0' }} />
+              </div>
+              <div>
+                <div className="text-16 font-medium text-platinum">
+                  {state.apConfig.running ? 'Broadcasting' : 'Not broadcasting'}
+                </div>
+                <div className="text-12 text-platinum/50 mt-2">
+                  Self-hosted Wi-Fi hotspot on wlan1
+                </div>
+              </div>
+              {state.apLoading && (
+                <div className="ml-auto">
+                  <LoadingOutlined style={{ color: '#9be564', fontSize: 16 }} />
+                </div>
+              )}
+            </div>
+
+            {/* AP Mode */}
+            <div className="mb-16 pt-16 border-t border-white/10">
+              <div className="text-12 text-platinum/50 uppercase tracking-wide mb-8">Mode</div>
+              <Radio.Group
+                value={state.apConfig.mode}
+                onChange={(e) => updateAPConfig({ mode: e.target.value })}
+                disabled={state.apLoading}
+                style={{ width: '100%' }}
+              >
+                <div className="flex flex-col gap-8">
+                  <Radio value={APMode.AlwaysOn} style={{ color: '#e0e0e0' }}>
+                    <span className="text-platinum">Always On</span>
+                    <span className="text-11 text-platinum/40 ml-8">AP stays on regardless of other connections</span>
+                  </Radio>
+                  <Radio value={APMode.Auto} style={{ color: '#e0e0e0' }}>
+                    <span className="text-platinum">Auto</span>
+                    <span className="text-11 text-platinum/40 ml-8">AP turns off when Ethernet or Wi-Fi connects</span>
+                  </Radio>
+                  <Radio value={APMode.AlwaysOff} style={{ color: '#e0e0e0' }}>
+                    <span className="text-platinum">Always Off</span>
+                    <span className="text-11 text-platinum/40 ml-8">AP never starts (use wired or Wi-Fi only)</span>
+                  </Radio>
+                </div>
+              </Radio.Group>
+            </div>
+
+            {/* SSID */}
+            <div className="mb-16 pt-16 border-t border-white/10">
+              <div className="text-12 text-platinum/50 uppercase tracking-wide mb-8">Network Name (SSID)</div>
+              <div className="flex justify-between items-center">
+                <div className="flex-1 min-w-0">
+                  {apSsidEditing ? (
+                    <Input
+                      value={apSsidValue}
+                      onChange={(e) => setApSsidValue(e.target.value)}
+                      placeholder="Enter AP name"
+                      maxLength={32}
+                      style={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        borderColor: 'rgba(224, 224, 224, 0.3)',
+                        color: '#e0e0e0',
+                      }}
+                      onPressEnter={() => {
+                        const v = apSsidValue.trim();
+                        if (v.length >= 1 && v.length <= 32) {
+                          updateAPConfig({ ssid: v });
+                          setApSsidEditing(false);
+                        } else {
+                          messageApi.error('SSID must be 1-32 characters');
+                        }
+                      }}
+                    />
+                  ) : (
+                    <span className="text-15 text-platinum font-mono">{state.apConfig.ssid || 'Not set'}</span>
+                  )}
+                </div>
+                {apSsidEditing ? (
+                  <div className="flex gap-8 ml-12">
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        setApSsidEditing(false);
+                        setApSsidValue(state.apConfig?.ssid || '');
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<SaveOutlined />}
+                      loading={state.apLoading}
+                      onClick={() => {
+                        const v = apSsidValue.trim();
+                        if (v.length >= 1 && v.length <= 32) {
+                          updateAPConfig({ ssid: v });
+                          setApSsidEditing(false);
+                        } else {
+                          messageApi.error('SSID must be 1-32 characters');
+                        }
+                      }}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<EditOutlined style={{ color: '#e0e0e0', fontSize: 18 }} />}
+                    onClick={() => {
+                      setApSsidValue(state.apConfig?.ssid || '');
+                      setApSsidEditing(true);
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Password */}
+            <div className="pt-16 border-t border-white/10">
+              <div className="text-12 text-platinum/50 uppercase tracking-wide mb-8">Password</div>
+              <div className="flex justify-between items-center">
+                <div className="flex-1 min-w-0">
+                  {apPasswordEditing ? (
+                    <Input.Password
+                      value={apPasswordValue}
+                      onChange={(e) => setApPasswordValue(e.target.value)}
+                      placeholder="Enter AP password (8-63 chars)"
+                      maxLength={63}
+                      style={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        borderColor: 'rgba(224, 224, 224, 0.3)',
+                        color: '#e0e0e0',
+                      }}
+                      onPressEnter={() => {
+                        if (apPasswordValue.length >= 8 && apPasswordValue.length <= 63) {
+                          updateAPConfig({ password: apPasswordValue });
+                          setApPasswordEditing(false);
+                        } else {
+                          messageApi.error('Password must be 8-63 characters');
+                        }
+                      }}
+                    />
+                  ) : (
+                    <span className="text-15 text-platinum font-mono">{'*'.repeat(Math.min(state.apConfig.password?.length || 0, 12)) || 'Not set'}</span>
+                  )}
+                </div>
+                {apPasswordEditing ? (
+                  <div className="flex gap-8 ml-12">
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        setApPasswordEditing(false);
+                        setApPasswordValue('');
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<SaveOutlined />}
+                      loading={state.apLoading}
+                      onClick={() => {
+                        if (apPasswordValue.length >= 8 && apPasswordValue.length <= 63) {
+                          updateAPConfig({ password: apPasswordValue });
+                          setApPasswordEditing(false);
+                        } else {
+                          messageApi.error('Password must be 8-63 characters');
+                        }
+                      }}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<EditOutlined style={{ color: '#e0e0e0', fontSize: 18 }} />}
+                    onClick={() => {
+                      setApPasswordValue(state.apConfig?.password || '');
+                      setApPasswordEditing(true);
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Wi-Fi Section */}
       {state.wifiEnable !== WifiEnable.Disable && (

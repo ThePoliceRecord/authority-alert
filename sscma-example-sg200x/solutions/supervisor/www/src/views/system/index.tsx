@@ -7,15 +7,16 @@ import {
   PickerValue,
   PickerValueExtend,
 } from "antd-mobile/es/components/picker";
-import { Button, Modal, message, Switch } from "antd";
-import { ExclamationCircleOutlined, ReloadOutlined, SyncOutlined, PoweroffOutlined } from "@ant-design/icons";
+import { Button, Modal, message, Switch, Input as AntInput } from "antd";
+import { ExclamationCircleOutlined, ReloadOutlined, SyncOutlined, PoweroffOutlined, EditOutlined, CheckOutlined, CloseOutlined } from "@ant-design/icons";
 import moment from "moment";
 import { useData } from "./hook";
 import { DeviceChannleMode, UpdateStatus, PowerMode } from "@/enum";
 import { requiredTrimValidate } from "@/utils/validate";
 import { parseUrlParam } from "@/utils";
 import useConfigStore from "@/store/config";
-import { factoryResetApi, setDevicePowerApi, getAnalyticsConfigApi, setAnalyticsConfigApi, reRegisterCameraApi } from "@/api/device/index";
+import { factoryResetApi, setDevicePowerApi, getAnalyticsConfigApi, setAnalyticsConfigApi, reRegisterCameraApi, startCodeRegistrationApi, getPlatformURLApi, setPlatformURLApi } from "@/api/device/index";
+import { useNavigate } from "react-router-dom";
 
 const channelList = [
   { label: "Self Hosted", value: DeviceChannleMode.Self },
@@ -53,19 +54,24 @@ function System() {
   } = useData();
 
   const { systemUpdateState, setSystemUpdateState } = useConfigStore();
+  const navigate = useNavigate();
 
   const [isDashboard, setIsDashboard] = useState(false);
   const [factoryResetLoading, setFactoryResetLoading] = useState(false);
   const [shareAnalytics, setShareAnalytics] = useState(true);
   const [reRegisterLoading, setReRegisterLoading] = useState(false);
-  
+  const [platformURL, setPlatformURL] = useState("");
+  const [editingURL, setEditingURL] = useState(false);
+  const [urlDraft, setUrlDraft] = useState("");
+  const [urlSaving, setUrlSaving] = useState(false);
+
   useEffect(() => {
     const param = parseUrlParam(window.location.href);
     const dashboard = param.dashboard || param.disablelayout;
     setIsDashboard(dashboard == 1);
   }, []);
 
-  // Load analytics configuration on mount
+  // Load analytics config and platform URL on mount
   useEffect(() => {
     const loadAnalyticsConfig = async () => {
       try {
@@ -75,7 +81,18 @@ function System() {
         console.error("Failed to load analytics config:", error);
       }
     };
+    const loadPlatformURL = async () => {
+      try {
+        const response = await getPlatformURLApi();
+        if (response.code === 0 && response.data?.platform_url) {
+          setPlatformURL(response.data.platform_url);
+        }
+      } catch (error) {
+        console.error("Failed to load platform URL:", error);
+      }
+    };
     loadAnalyticsConfig();
+    loadPlatformURL();
   }, []);
 
   const channelLable = useMemo(() => {
@@ -152,8 +169,8 @@ function System() {
       icon: <SyncOutlined style={{ color: "#2328bb" }} />,
       content: (
         <div>
-          <p>This will re-register the camera with the Authority Alert service.</p>
-          <p className="mt-8">Use this if you need to update the camera's registration or if you're experiencing connection issues.</p>
+          <p>This will clear the current registration and start a new claim code flow.</p>
+          <p className="mt-8 text-amber-500">You will need to enter a new claim code on the platform to complete registration.</p>
         </div>
       ),
       okText: "Re-register",
@@ -162,8 +179,31 @@ function System() {
       onOk: async () => {
         setReRegisterLoading(true);
         try {
-          await reRegisterCameraApi();
-          message.success("Camera re-registered successfully");
+          // Step 1: Clear existing registration data
+          const clearResponse = await reRegisterCameraApi();
+          if (clearResponse.code !== 0) {
+            message.error(clearResponse.message || "Failed to clear registration data");
+            setReRegisterLoading(false);
+            return;
+          }
+
+          // Step 2: Get location name from device name
+          const locationName = deviceInfo?.deviceName || "Camera";
+
+          // Step 3: Start code registration flow
+          const startResponse = await startCodeRegistrationApi({
+            location_name: locationName,
+          });
+
+          if (startResponse.code === 0) {
+            message.success("Registration started. Redirecting to Security page...");
+            // Navigate to Security page where the claim code UI is displayed
+            setTimeout(() => {
+              navigate("/security");
+            }, 500);
+          } else {
+            message.error(startResponse.message || "Failed to start code registration");
+          }
         } catch (error) {
           console.error("Failed to re-register camera:", error);
           message.error("Failed to re-register camera");
@@ -172,6 +212,36 @@ function System() {
         }
       },
     });
+  };
+
+  const handleSaveURL = async () => {
+    const trimmed = urlDraft.trim();
+    if (!trimmed) {
+      message.error("URL cannot be empty");
+      return;
+    }
+    try {
+      new URL(trimmed);
+    } catch {
+      message.error("Invalid URL format");
+      return;
+    }
+    setUrlSaving(true);
+    try {
+      const response = await setPlatformURLApi({ platform_url: trimmed });
+      if (response.code === 0 && response.data?.platform_url) {
+        setPlatformURL(response.data.platform_url);
+        message.success("API base URL updated");
+      } else {
+        message.error(response.msg || "Failed to save URL");
+      }
+    } catch (error) {
+      console.error("Failed to save platform URL:", error);
+      message.error("Failed to save URL");
+    } finally {
+      setUrlSaving(false);
+      setEditingURL(false);
+    }
   };
 
   const handlePowerAction = (mode: PowerMode) => {
@@ -229,6 +299,51 @@ function System() {
 
           <div className="font-bold text-18 mb-14 my-24 text-platinum">Camera Registration</div>
           <div className="px-24 py-24" style={translucentCardStyle}>
+            <div className="flex justify-between items-center pb-20 mb-20 border-b border-white/10">
+              <div className="flex-1 mr-20">
+                <span className="text-platinum/70">API Base URL</span>
+                <p className="text-12 text-platinum/50 mt-4">
+                  The Authority Alert platform server this camera connects to.
+                </p>
+              </div>
+              {editingURL ? (
+                <div className="flex items-center gap-8">
+                  <AntInput
+                    value={urlDraft}
+                    onChange={(e) => setUrlDraft(e.target.value)}
+                    placeholder="https://example.com"
+                    style={{ width: 280 }}
+                    onPressEnter={handleSaveURL}
+                    autoFocus
+                  />
+                  <Button
+                    type="primary"
+                    icon={<CheckOutlined />}
+                    onClick={handleSaveURL}
+                    loading={urlSaving}
+                    size="small"
+                  />
+                  <Button
+                    icon={<CloseOutlined />}
+                    onClick={() => setEditingURL(false)}
+                    size="small"
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-8">
+                  <span className="text-platinum truncate" style={{ maxWidth: 280 }}>
+                    {platformURL || "Not configured"}
+                  </span>
+                  <Button
+                    type="text"
+                    icon={<EditOutlined />}
+                    onClick={() => { setUrlDraft(platformURL); setEditingURL(true); }}
+                    size="small"
+                    style={{ color: 'rgba(255,255,255,0.5)' }}
+                  />
+                </div>
+              )}
+            </div>
             <div className="flex justify-between items-center">
               <div className="flex-1 mr-20">
                 <span className="text-platinum/70">Re-register Camera</span>

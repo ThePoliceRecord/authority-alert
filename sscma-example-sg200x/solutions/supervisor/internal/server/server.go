@@ -282,8 +282,9 @@ func (s *Server) setupRoutes() http.Handler {
 	// Paths that don't require authentication
 	// Only include endpoints needed before login
 	noAuthPaths := map[string]bool{
-		"/api/userMgr/login":             true,
-		"/api/deviceMgr/queryDeviceInfo": true, // Needed before login to get device SN
+		"/api/userMgr/login":                true,
+		"/api/deviceMgr/queryDeviceInfo":    true, // Needed before login to get device SN
+		"/api/deviceMgr/syncBrowserTime":    true, // OOBE: set clock from browser before login
 	}
 
 	// Auth middleware
@@ -321,6 +322,7 @@ func (s *Server) setupRoutes() http.Handler {
 	apiHandler.HandleFunc("/api/deviceMgr/getUploadedUpdatePackage", deviceHandler.GetUploadedUpdatePackage)
 	apiHandler.HandleFunc("/api/deviceMgr/applyUploadedUpdatePackage", deviceHandler.ApplyUploadedUpdatePackage)
 	apiHandler.HandleFunc("/api/deviceMgr/setTimestamp", deviceHandler.SetTimestamp)
+	apiHandler.HandleFunc("/api/deviceMgr/syncBrowserTime", deviceHandler.SyncBrowserTime)
 	apiHandler.HandleFunc("/api/deviceMgr/getTimestamp", deviceHandler.GetTimestamp)
 	apiHandler.HandleFunc("/api/deviceMgr/setTimezone", deviceHandler.SetTimezone)
 	apiHandler.HandleFunc("/api/deviceMgr/getTimezone", deviceHandler.GetTimezone)
@@ -335,6 +337,8 @@ func (s *Server) setupRoutes() http.Handler {
 	apiHandler.HandleFunc("/api/deviceMgr/formatSDCard", deviceHandler.FormatSDCard)
 	apiHandler.HandleFunc("/api/deviceMgr/getPlatformInfo", deviceHandler.GetPlatformInfo)
 	apiHandler.HandleFunc("/api/deviceMgr/savePlatformInfo", deviceHandler.SavePlatformInfo)
+	apiHandler.HandleFunc("/api/deviceMgr/getPlatformURL", deviceHandler.GetPlatformURL)
+	apiHandler.HandleFunc("/api/deviceMgr/setPlatformURL", deviceHandler.SetPlatformURL)
 	apiHandler.HandleFunc("/api/deviceMgr/getAnalyticsConfig", deviceHandler.GetAnalyticsConfig)
 	apiHandler.HandleFunc("/api/deviceMgr/setAnalyticsConfig", deviceHandler.SetAnalyticsConfig)
 	apiHandler.HandleFunc("/api/deviceMgr/reRegisterCamera", deviceHandler.ReRegisterCamera)
@@ -358,6 +362,8 @@ func (s *Server) setupRoutes() http.Handler {
 	apiHandler.HandleFunc("/api/wifiMgr/disconnectWiFi", s.wifiHandler.DisconnectWiFi)
 	apiHandler.HandleFunc("/api/wifiMgr/forgetWiFi", s.wifiHandler.ForgetWiFi)
 	apiHandler.HandleFunc("/api/wifiMgr/switchWiFi", s.wifiHandler.SwitchWiFi)
+	apiHandler.HandleFunc("/api/wifiMgr/getAPConfig", s.wifiHandler.GetAPConfig)
+	apiHandler.HandleFunc("/api/wifiMgr/setAPConfig", s.wifiHandler.SetAPConfig)
 
 	// File management
 	apiHandler.HandleFunc("/api/fileMgr/list", fileHandler.List)

@@ -134,6 +134,19 @@ const Security = () => {
                     {countdown === 'Expired' ? 'Code expired' : `Expires in ${countdown}`}
                   </div>
                 )}
+                {state.platformURL && (
+                  <div className="mt-12">
+                    <div className="text-12 text-platinum/50 mb-4">Or claim from your browser:</div>
+                    <a
+                      href={`${state.platformURL}/claim`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-14 text-primary hover:underline"
+                    >
+                      Open Claim Page
+                    </a>
+                  </div>
+                )}
               </div>
             )}
 
