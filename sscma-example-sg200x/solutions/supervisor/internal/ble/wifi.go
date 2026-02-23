@@ -27,6 +27,10 @@ func (s *Service) validateSession(token string) error {
 
 // handleAuth processes the "auth" command on the Session characteristic (FC01).
 func (s *Service) handleAuth(req Request) Response {
+	// Reset to default MTU for new session; the actual negotiated MTU will
+	// be picked up from the next BlueZ ReadValue/WriteValue options map.
+	s.updateMTU(defaultMTU)
+
 	username := auth.GetUsername()
 
 	// During OOBE, no password exists yet — issue a token without verification.

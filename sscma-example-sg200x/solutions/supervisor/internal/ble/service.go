@@ -23,6 +23,7 @@ const (
 	oobeCheckPeriod  = 5 * time.Second
 	hciWaitMax       = 60 * time.Second
 	defaultMTU       = 23
+	fragmentDelay    = 5 * time.Millisecond
 	oobeFlagFile     = "/etc/oobe/flag"
 )
 
@@ -162,9 +163,24 @@ func (s *Service) Stop() {
 	})
 }
 
+// updateMTU updates the negotiated MTU if it changed.
+func (s *Service) updateMTU(mtu int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if mtu != s.mtu {
+		logger.Info("BLE: MTU updated %d -> %d", s.mtu, mtu)
+		s.mtu = mtu
+	}
+}
+
 // ---- characteristic callbacks ----
 
 func (s *Service) wireCallbacks() {
+	// Wire MTU extraction on all characteristics.
+	for i := range s.chars {
+		s.chars[i].onMTU = func(mtu int) { s.updateMTU(mtu) }
+	}
+
 	// DeviceInfo (read-only).
 	s.chars[0].onRead = func() ([]byte, *dbus.Error) {
 		return s.buildDeviceInfo(), nil
@@ -256,7 +272,10 @@ func (s *Service) sendResponse(charIdx int, resp Response) {
 	}
 
 	packets := Fragment(data, mtu)
-	for _, pkt := range packets {
+	for i, pkt := range packets {
+		if i > 0 {
+			time.Sleep(fragmentDelay)
+		}
 		if err := c.sendNotify(conn, pkt); err != nil {
 			logger.Warning("BLE: notify error: %v", err)
 			return

@@ -3,6 +3,8 @@ package ble
 import (
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
+
+	"supervisor/pkg/logger"
 )
 
 // D-Bus object paths used for the GATT application.
@@ -68,10 +70,27 @@ type GattCharacteristic struct {
 	notifying bool
 	onRead    func() ([]byte, *dbus.Error)
 	onWrite   func([]byte) *dbus.Error
+	onMTU     func(int)
+}
+
+// extractMTU reads the negotiated ATT MTU from BlueZ's options map and
+// forwards it via the onMTU callback.
+func (c *GattCharacteristic) extractMTU(options map[string]dbus.Variant) {
+	if c.onMTU == nil {
+		return
+	}
+	if v, ok := options["mtu"]; ok {
+		if mtu, ok := v.Value().(uint16); ok && mtu > 0 {
+			c.onMTU(int(mtu))
+		} else {
+			logger.Debug("BLE: MTU option unexpected type: %T", v.Value())
+		}
+	}
 }
 
 // ReadValue is called by BlueZ when a central reads this characteristic.
 func (c *GattCharacteristic) ReadValue(options map[string]dbus.Variant) ([]byte, *dbus.Error) {
+	c.extractMTU(options)
 	if c.onRead != nil {
 		return c.onRead()
 	}
@@ -80,6 +99,7 @@ func (c *GattCharacteristic) ReadValue(options map[string]dbus.Variant) ([]byte,
 
 // WriteValue is called by BlueZ when a central writes to this characteristic.
 func (c *GattCharacteristic) WriteValue(value []byte, options map[string]dbus.Variant) *dbus.Error {
+	c.extractMTU(options)
 	if c.onWrite != nil {
 		return c.onWrite(value)
 	}
