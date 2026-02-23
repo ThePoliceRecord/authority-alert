@@ -30,14 +30,14 @@ import (
 
 // URLs and file paths
 const (
-	OfficialURL      = "https://github.com/ThePoliceRecord/authority-alert-OS/releases/latest"
+	OfficialURL      = "https://github.com/ThePoliceRecord/authority-alert/releases/latest"
 	ChecksumFileName = "sg2002_recamera_emmc_sha256sum.txt"
 	URLFileName      = "url.txt"
 	// UploadedPackageMetaFileName stores metadata about the last uploaded update package.
 	// Stored in UpgradeFilesDir.
 	UploadedPackageMetaFileName = "uploaded_package.json"
 
-	DefaultUpgradeURL = "https://github.com/ThePoliceRecord/authority-alert-OS/releases/latest"
+	DefaultUpgradeURL = "https://github.com/ThePoliceRecord/authority-alert/releases/latest"
 )
 
 // Partitions

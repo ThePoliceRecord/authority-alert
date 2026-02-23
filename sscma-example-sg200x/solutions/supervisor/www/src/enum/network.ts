@@ -23,6 +23,13 @@ export enum WifiEnable {
   Disable = 2, // No WiFi
 }
 
+// Access Point mode
+export enum APMode {
+  AlwaysOn = "always_on",
+  AlwaysOff = "always_off",
+  Auto = "auto",
+}
+
 // Network connection status (corresponds to WiFiInfo status field)
 export enum NetworkStatus {
   Disconnected = 1, // Disconnected

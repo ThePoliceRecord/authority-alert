@@ -71,6 +71,10 @@
             echo "Build reCamera-OS SDK:"
             echo "  nix run .#build"
             echo ""
+            echo "Clean build artifacts:"
+            echo "  nix run .#clean           # Remove entire output directory"
+            echo "  nix run .#clean-external  # Clean only br2-external packages (force rebuild)"
+            echo ""
             echo "Cut a release (tags all 3 repos using the top version in reCamera-OS/CHANGELOG.md):"
             echo "  nix run .#release"
             echo ""
@@ -306,6 +310,75 @@
                 echo "Done!"
               else
                 echo "Output directory already clean"
+              fi
+            '');
+          };
+
+          # Clean only br2-external package build artifacts
+          clean-external = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "clean-external" ''
+              set -e
+
+              BR2_EXT_DIR="reCamera-OS/external/br2-external"
+              BUILD_GLOB="reCamera-OS/output/*/buildroot-*/output/*/build"
+
+              # Discover package names from br2-external subdirectories
+              PACKAGES=()
+              for pkg_dir in "$BR2_EXT_DIR"/*/; do
+                pkg_name=$(basename "$pkg_dir")
+                if ls "$pkg_dir"/*.mk >/dev/null 2>&1; then
+                  PACKAGES+=("$pkg_name")
+                fi
+              done
+
+              if [ ''${#PACKAGES[@]} -eq 0 ]; then
+                echo "No packages found in $BR2_EXT_DIR"
+                exit 1
+              fi
+
+              BUILD_DIRS=()
+              for d in $BUILD_GLOB; do
+                [ -d "$d" ] && BUILD_DIRS+=("$d")
+              done
+
+              if [ ''${#BUILD_DIRS[@]} -eq 0 ]; then
+                echo "No Buildroot build directories found."
+                echo "Nothing to clean."
+                exit 0
+              fi
+
+              echo "============================================="
+              echo "Cleaning br2-external package build artifacts"
+              echo "============================================="
+              echo ""
+
+              CLEANED=0
+              for build_dir in "''${BUILD_DIRS[@]}"; do
+                target=$(echo "$build_dir" | ${pkgs.gnused}/bin/sed 's|reCamera-OS/output/\([^/]*\)/.*|\1|')
+                echo "Target: $target"
+                echo "  Build dir: $build_dir"
+                echo ""
+
+                for pkg in "''${PACKAGES[@]}"; do
+                  for match in "$build_dir"/''${pkg}-[0-9v]*/; do
+                    if [ -d "$match" ]; then
+                      dir_name=$(basename "$match")
+                      echo "  Removing: $dir_name"
+                      rm -rf "$match"
+                      CLEANED=$((CLEANED + 1))
+                    fi
+                  done
+                done
+              done
+
+              echo ""
+              if [ "$CLEANED" -gt 0 ]; then
+                echo "Cleaned $CLEANED package build director$([ "$CLEANED" -eq 1 ] && echo 'y' || echo 'ies')."
+                echo ""
+                echo "Next build will rebuild these packages from source."
+              else
+                echo "No br2-external package build directories found. Already clean."
               fi
             '');
           };

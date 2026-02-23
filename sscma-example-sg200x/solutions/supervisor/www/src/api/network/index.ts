@@ -1,6 +1,6 @@
 import { supervisorRequest } from "@/utils/request";
 import { WifiEnable } from "@/enum/network";
-import { IWifiInfo, IConnectParams } from "./network";
+import { IWifiInfo, IConnectParams, IAPConfig, ISetAPConfigParams } from "./network";
 
 // 获取wifi信息列表（包含所有WiFi相关信息）
 export const getWiFiInfoListApi = async () =>
@@ -38,6 +38,19 @@ export const switchWiFiApi = async (data: { mode: WifiEnable }) =>
 export const forgetWiFiApi = async (data: { ssid: string }) =>
   supervisorRequest({
     url: "api/wifiMgr/forgetWiFi",
+    method: "post",
+    data,
+  });
+// Get AP config
+export const getAPConfigApi = async () =>
+  supervisorRequest<IAPConfig>({
+    url: "api/wifiMgr/getAPConfig",
+    method: "get",
+  });
+// Set AP config
+export const setAPConfigApi = async (data: ISetAPConfigParams) =>
+  supervisorRequest({
+    url: "api/wifiMgr/setAPConfig",
     method: "post",
     data,
   });

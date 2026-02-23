@@ -143,7 +143,7 @@ Recommended edit:
 - Current URL: [`sscma-example-sg200x/solutions/supervisor/www/src/layout/main.tsx:28`](sscma-example-sg200x/solutions/supervisor/www/src/layout/main.tsx:28)
 
 Recommended edit:
-- Replace with `https://api.github.com/repos/ThePoliceRecord/authority-alert-OS/releases/latest` (or your canonical repo).
+- Replace with `https://api.github.com/repos/ThePoliceRecord/authority-alert/releases/latest` (or your canonical repo).
 - Update the UI strings/links: [`sscma-example-sg200x/solutions/supervisor/www/src/layout/main.tsx:86`](sscma-example-sg200x/solutions/supervisor/www/src/layout/main.tsx:86) and [`sscma-example-sg200x/solutions/supervisor/www/src/layout/main.tsx:90`](sscma-example-sg200x/solutions/supervisor/www/src/layout/main.tsx:90)
 
 **Change D2 (about screen): remove remaining “reCamera” hardware label**

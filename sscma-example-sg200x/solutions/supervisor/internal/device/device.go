@@ -3,11 +3,13 @@ package device
 
 import (
 	"bufio"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"supervisor/internal/config"
 	"supervisor/internal/system"
 	"supervisor/internal/upgrade"
 )
@@ -349,4 +351,23 @@ func GetPlatformInfo() string {
 // SavePlatformInfo saves the platform configuration.
 func SavePlatformInfo(content string) error {
 	return os.WriteFile(PlatformInfo, []byte(content), 0644)
+}
+
+// GetPlatformURL returns the canonical platform API base URL.
+// Resolution order: platform.info → config → fallback.
+func GetPlatformURL() string {
+	if info := GetPlatformInfo(); info != "" {
+		var data map[string]interface{}
+		if err := json.Unmarshal([]byte(info), &data); err == nil {
+			if u, ok := data["platform_url"].(string); ok && u != "" {
+				return strings.TrimRight(u, "/")
+			}
+		}
+	}
+	base := strings.TrimSpace(config.Get().TPRPlatformURL)
+	base = strings.TrimRight(base, "/")
+	if base == "" {
+		return "https://thepolicerecord.com"
+	}
+	return base
 }

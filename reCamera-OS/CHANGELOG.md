@@ -1,3 +1,78 @@
+## 0.2.10 (2026-02-23)
+
+### sscma-example-sg200x
+
+- **New Features:**
+
+    - **BLE OOBE Provisioning**
+      - Full BLE GATT server via BlueZ D-Bus for iOS out-of-box setup
+      - Characteristics: auth, WiFi scan/connect, device info, setup (password, device name, timezone/clock, platform registration, OOBE completion)
+      - Fragmentation/reassembly protocol with 1-byte framing header
+      - Auto-shutdown when OOBE completes; idle session timeout
+      - `auth.GenerateToken()` for OOBE bypass on fresh devices (no password set)
+      - Files: [`internal/ble/`](sscma-example-sg200x/solutions/supervisor/internal/ble/)
+
+    - **WebCodecs Video Player**
+      - Hardware-accelerated H.264 decoding in supervisor web UI overview
+      - Files: [`WebCodecsPlayer.ts`](sscma-example-sg200x/solutions/supervisor/www/src/views/overview/WebCodecsPlayer.ts)
+
+    - **Platform Features**
+      - Auto-complete OOBE when camera is claimed (skip intermediate screen)
+      - Dynamic `/claim` link in supervisor security view
+      - Platform URL management, model update status API
+      - Files: [`handler/device.go`](sscma-example-sg200x/solutions/supervisor/internal/handler/device.go), [`device/device.go`](sscma-example-sg200x/solutions/supervisor/internal/device/device.go)
+
+    - **Network & System UI Enhancements**
+      - Expanded WiFi management UI and API (network view)
+      - System settings view improvements
+      - OOBE sound effect on success
+      - Files: [`views/network/`](sscma-example-sg200x/solutions/supervisor/www/src/views/network/), [`views/system/`](sscma-example-sg200x/solutions/supervisor/www/src/views/system/)
+
+    - **NTP Improvements**
+      - Enhanced time synchronization logic
+      - Files: [`ntp/ntp.go`](sscma-example-sg200x/solutions/supervisor/internal/ntp/ntp.go)
+
+- **Bug Fixes:**
+
+    - **BLE fragmentation: use negotiated MTU instead of hardcoded 23**
+      - Extract ATT MTU from BlueZ ReadValue/WriteValue options so outbound notifications use the negotiated MTU (typically 512 on iOS) rather than the default 23
+      - Reduces a ~300-byte auth response from 14 fragments to a single notification, eliminating packet loss
+      - Adds 5ms inter-fragment delay for large multi-fragment responses
+      - Resets MTU to default on new auth sessions for reconnecting clients
+      - Files: [`ble/bluez.go`](sscma-example-sg200x/solutions/supervisor/internal/ble/bluez.go), [`ble/service.go`](sscma-example-sg200x/solutions/supervisor/internal/ble/service.go)
+
+    - **BLE 512-byte boundary fragmentation bug**
+      - Camera BLE controller drops 2 bytes when ATT notification value is exactly 512 bytes (MTU 515), corrupting JSON payloads mid-stream
+      - Cap notification value to 509 in `Fragment()` and cap stored MTU to 514 in `updateMTU()`
+      - Files: [`ble/protocol.go`](sscma-example-sg200x/solutions/supervisor/internal/ble/protocol.go), [`ble/service.go`](sscma-example-sg200x/solutions/supervisor/internal/ble/service.go)
+
+    - **Fix WiFi "Verifying connection..." hanging indefinitely during OOBE**
+      - Backend: increase failedCnt budget from 20 to 40 (80s window)
+      - Frontend: slower polling (2s), initial delay (3s), API error tracking, progressive status messages
+      - Files: [`oobe/web/js/oobe-app.js`](sscma-example-sg200x/solutions/oobe/web/js/oobe-app.js), [`network/wifi.go`](sscma-example-sg200x/solutions/supervisor/internal/network/wifi.go)
+
+    - **Fix data race in SetPlatformURL handler**
+      - Remove unsynchronized config mutation that raced with uploader/model-update goroutines
+      - Files: [`detectionqueue/uploader.go`](sscma-example-sg200x/solutions/supervisor/internal/detectionqueue/uploader.go)
+
+    - **Switch all URLs to production**
+      - Replace dev.thepolicerecord.com with thepolicerecord.com across OOBE and supervisor
+
+- **Documentation:**
+    - Consolidated `ble-provisioning-spec.md` and `ble-oobe-ios-spec.md` into single [`ble-oobe-spec.md`](spec/ble-oobe-spec.md)
+
+- **Statistics:**
+    - **Total Changes:** 54 files changed
+    - **Additions:** +4,886 lines
+    - **Deletions:** -491 lines
+    - **Net:** +4,395 lines
+
+## 0.2.9 (2026-02-17)
+
+### Changes
+
+-
+
 ## 0.2.8 (2026-02-17)
 
 ### Monorepo Structure

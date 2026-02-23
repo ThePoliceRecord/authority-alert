@@ -10,7 +10,7 @@ Last updated: YYYY-MM-DD
 
 ## Open-Source Flexibility
 - Firmware built on open-source reCamera OS (RISC-V optimized) with customizable OTA channels.
-- Source code available: [Seeed reCamera-OS GitHub](https://github.com/ThePoliceRecord/authority-alert-OS).
+- Source code available: [Seeed reCamera-OS GitHub](https://github.com/ThePoliceRecord/authority-alert).
 - Cross-platform development supported via Ubuntu guides and pre-configured Docker images.
 - Pro-level interfaces: C++ SDK and OpenCV C++ APIs for low-level access.
 

@@ -12,6 +12,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,7 +21,6 @@ import (
 	"time"
 
 	"supervisor/internal/api"
-	"supervisor/internal/config"
 	"supervisor/internal/device"
 	"supervisor/internal/modelupdate"
 	"supervisor/internal/ntp"
@@ -83,12 +83,7 @@ const (
 )
 
 func platformBaseURL() string {
-	base := strings.TrimSpace(config.Get().TPRPlatformURL)
-	base = strings.TrimRight(base, "/")
-	if base == "" {
-		return "https://dev.thepolicerecord.com"
-	}
-	return base
+	return device.GetPlatformURL()
 }
 
 func platformURL(path string) string {
@@ -735,6 +730,66 @@ func (h *DeviceHandler) SetTimestamp(w http.ResponseWriter, r *http.Request) {
 	api.WriteSuccess(w, map[string]interface{}{"timestamp": req.Timestamp})
 }
 
+// SyncBrowserTime sets the system clock from the browser during OOBE.
+// This endpoint is unauthenticated but self-guarded: it only works when the
+// OOBE flag exists, NTP hasn't synced yet, and the system clock is clearly wrong.
+func (h *DeviceHandler) SyncBrowserTime(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		api.WriteError(w, -1, "Method not allowed")
+		return
+	}
+
+	noSync := func(reason string) {
+		api.WriteSuccess(w, map[string]interface{}{"synced": false, "reason": reason})
+	}
+
+	// Guard 1: OOBE must be active
+	if _, err := os.Stat(OOBEFlagFile); err != nil {
+		noSync("oobe not active")
+		return
+	}
+
+	// Guard 2: NTP must not have already synced
+	if h.ntpManager != nil && h.ntpManager.IsSynced() {
+		noSync("ntp already synced")
+		return
+	}
+
+	// Guard 3: System clock must be clearly wrong (year < 2024 or > 2026)
+	now := time.Now()
+	if now.Year() >= 2024 && now.Year() <= 2026 {
+		noSync("system clock already reasonable")
+		return
+	}
+
+	var req SetTimestampRequest
+	if err := api.ParseJSONBody(r, &req); err != nil {
+		api.WriteError(w, -1, "Invalid request body")
+		return
+	}
+
+	// Guard 4: Proposed timestamp must be reasonable (year 2024–2028)
+	proposed := time.Unix(req.Timestamp, 0)
+	if proposed.Year() < 2024 || proposed.Year() > 2028 {
+		noSync("proposed timestamp out of range")
+		return
+	}
+
+	// Set system time
+	dateStr := proposed.Format("2006-01-02 15:04:05")
+	if err := exec.Command("date", "-s", dateStr).Run(); err != nil {
+		logger.Error("SyncBrowserTime: failed to set timestamp: %v", err)
+		api.WriteError(w, -1, "Failed to set timestamp")
+		return
+	}
+
+	// Sync to hardware clock
+	exec.Command("hwclock", "-w").Run()
+
+	logger.Info("SyncBrowserTime: clock set to %s from browser", dateStr)
+	api.WriteSuccess(w, map[string]interface{}{"synced": true, "reason": "ok"})
+}
+
 // GetTimestamp returns the current system timestamp.
 func (h *DeviceHandler) GetTimestamp(w http.ResponseWriter, r *http.Request) {
 	api.WriteSuccess(w, map[string]interface{}{"timestamp": time.Now().Unix()})
@@ -1008,6 +1063,64 @@ func (h *DeviceHandler) SavePlatformInfo(w http.ResponseWriter, r *http.Request)
 	api.WriteSuccess(w, map[string]interface{}{"message": "Platform info saved"})
 }
 
+// GetPlatformURL returns the current effective platform API base URL.
+func (h *DeviceHandler) GetPlatformURL(w http.ResponseWriter, r *http.Request) {
+	api.WriteSuccess(w, map[string]interface{}{"platform_url": platformBaseURL()})
+}
+
+// SetPlatformURL updates the platform API base URL.
+// It updates both the runtime config and the persistent platform.info file.
+func (h *DeviceHandler) SetPlatformURL(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		api.WriteError(w, -1, "Method not allowed")
+		return
+	}
+
+	var req struct {
+		PlatformURL string `json:"platform_url"`
+	}
+	if err := api.ParseJSONBody(r, &req); err != nil {
+		api.WriteError(w, -1, "Invalid request body")
+		return
+	}
+
+	rawURL := strings.TrimSpace(req.PlatformURL)
+	if rawURL == "" {
+		api.WriteError(w, -1, "Platform URL required")
+		return
+	}
+
+	// Validate URL format
+	parsed, err := url.Parse(rawURL)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+		api.WriteError(w, -1, "Invalid URL. Must be a valid http:// or https:// URL")
+		return
+	}
+	cleanURL := strings.TrimRight(parsed.Scheme+"://"+parsed.Host+parsed.Path, "/")
+
+	// Update platform.info file (merge into existing JSON)
+	existing := device.GetPlatformInfo()
+	var data map[string]interface{}
+	if existing != "" {
+		if err := json.Unmarshal([]byte(existing), &data); err != nil {
+			data = map[string]interface{}{}
+		}
+	} else {
+		data = map[string]interface{}{}
+	}
+	data["platform_url"] = cleanURL
+
+	updated, _ := json.MarshalIndent(data, "", "  ")
+	if err := device.SavePlatformInfo(string(updated)); err != nil {
+		logger.Error("Failed to save platform URL: %v", err)
+		api.WriteError(w, -1, "Failed to save platform URL")
+		return
+	}
+
+	logger.Info("Platform URL updated to: %s", cleanURL)
+	api.WriteSuccess(w, map[string]interface{}{"platform_url": cleanURL})
+}
+
 // FactoryReset sets the factory reset flag for the next reboot.
 // This will reset the device to factory defaults on next restart.
 func (h *DeviceHandler) FactoryReset(w http.ResponseWriter, r *http.Request) {
@@ -1261,124 +1374,63 @@ type CameraRegistrationResponse struct {
 	Data    json.RawMessage `json:"data"`
 }
 
-// AACamera represents the camera registration data for Authority Alert backend.
-type AACamera struct {
-	SerialNumber string `json:"serial_number"`
-	DeviceName   string `json:"device_name"`
-	OSVersion    string `json:"os_version"`
-	ModelVersion string `json:"model_version,omitempty"`
-}
-
-// ReRegisterCamera re-registers the camera with the Authority Alert service.
+// ReRegisterCamera clears existing registration data to allow fresh code-based registration.
+// After calling this, the frontend should call StartCodeRegistration to initiate the claim flow.
 func (h *DeviceHandler) ReRegisterCamera(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		api.WriteError(w, -1, "Method not allowed")
 		return
 	}
 
-	logger.Info("Camera re-registration requested")
+	logger.Info("Camera re-registration requested - clearing existing registration data")
 
-	// Read secret_key from platform info
-	platformInfo := device.GetPlatformInfo()
-	if platformInfo == "" {
-		logger.Error("Platform info not found - camera may not be registered yet")
-		api.WriteError(w, -1, "Camera not registered. Please complete OOBE first.")
-		return
-	}
-
-	// Parse platform info to get secret_key
-	var platformData map[string]interface{}
-	if err := json.Unmarshal([]byte(platformInfo), &platformData); err != nil {
-		logger.Error("Failed to parse platform info: %v", err)
-		api.WriteError(w, -1, "Invalid platform configuration")
-		return
-	}
-
-	// Look for secret_key (new) or fall back to api_key (old) for backwards compatibility
-	secretKey, ok := platformData["secret_key"].(string)
-	if !ok || secretKey == "" {
-		// Try old api_key field for backwards compatibility
-		secretKey, ok = platformData["api_key"].(string)
-		if !ok || secretKey == "" {
-			logger.Error("Secret key not found in platform info")
-			api.WriteError(w, -1, "Secret key not found. Please complete OOBE registration again.")
-			return
+	// Clear registration data but preserve the platform_url so the camera
+	// continues talking to the correct server after re-registration.
+	existing := device.GetPlatformInfo()
+	var preserved map[string]interface{}
+	if existing != "" {
+		if err := json.Unmarshal([]byte(existing), &preserved); err == nil {
+			if url, ok := preserved["platform_url"].(string); ok && url != "" {
+				preserved = map[string]interface{}{"platform_url": url}
+			} else {
+				preserved = map[string]interface{}{}
+			}
+		} else {
+			preserved = map[string]interface{}{}
 		}
-		logger.Warning("Using legacy api_key field - should be secret_key")
+	} else {
+		preserved = map[string]interface{}{}
 	}
-
-	// Build camera registration data
-	cameraData := AACamera{
-		SerialNumber: system.GetSerialNumber(),
-		DeviceName:   system.GetDeviceName(),
-		OSVersion:    system.GetOSVersion(),
-	}
-
-	// Call Authority Alert self-register endpoint
-	if err := selfRegisterCamera(secretKey, &cameraData); err != nil {
-		logger.Error("Failed to re-register camera: %v", err)
-		api.WriteError(w, -1, "Failed to re-register camera: "+err.Error())
+	data, _ := json.MarshalIndent(preserved, "", "  ")
+	if err := device.SavePlatformInfo(string(data)); err != nil {
+		logger.Error("Failed to clear registration data: %v", err)
+		api.WriteError(w, -1, "Failed to clear registration data")
 		return
 	}
 
-	logger.Info("Camera re-registered successfully")
+	// Cancel any pending code registration
+	h.CancelCodeRegistrationInternal()
+
+	logger.Info("Registration data cleared. Ready for new registration.")
 	api.WriteSuccess(w, map[string]interface{}{
-		"status":  "success",
-		"message": "Camera re-registered successfully",
+		"status":  "cleared",
+		"message": "Registration cleared. Ready for new registration.",
 	})
 }
 
-// selfRegisterCamera calls the Authority Alert self-register API with PUT method.
-func selfRegisterCamera(apiKey string, cameraData *AACamera) error {
-	// Authority Alert backend URL
-	backendURL := platformURL("/api/v1/cameras/self-register/")
+// CancelCodeRegistrationInternal cancels any active code registration without HTTP response.
+func (h *DeviceHandler) CancelCodeRegistrationInternal() {
+	codeRegMutex.Lock()
+	defer codeRegMutex.Unlock()
 
-	// Marshal camera data
-	jsonData, err := json.Marshal(cameraData)
-	if err != nil {
-		return fmt.Errorf("failed to marshal camera data: %w", err)
+	if codeRegState.Status == "generating" || codeRegState.Status == "active" {
+		if codeRegState.cancel != nil {
+			close(codeRegState.cancel)
+		}
+		codeRegState.Status = "idle"
+		codeRegState.Message = "Cancelled"
+		logger.Info("Code registration cancelled internally")
 	}
-
-	// Create HTTP request
-	req, err := http.NewRequest("PUT", backendURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Set headers
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-	applyPlatformCommonHeaders(req)
-
-	// Send request
-	client := tls.PlatformHTTPClient(30 * time.Second)
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Read response
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response: %w", err)
-	}
-
-	// Check status code
-	if resp.StatusCode != http.StatusOK {
-		logger.Error("Authority Alert API returned status %d: %s", resp.StatusCode, string(body))
-		return fmt.Errorf("registration failed with status %d", resp.StatusCode)
-	}
-
-	// Parse response
-	var response map[string]interface{}
-	if err := json.Unmarshal(body, &response); err != nil {
-		logger.Warning("Failed to parse response: %v", err)
-		// Don't fail if we can't parse response, as long as status was 200
-	}
-
-	logger.Info("Camera self-registration successful: %s", string(body))
-	return nil
 }
 
 // selfRegisterWithAPIKey performs camera self-registration using an API key.
@@ -1489,14 +1541,20 @@ func (h *DeviceHandler) selfRegisterWithAPIKey(apiKey string, userID interface{}
 	}
 
 	// Extract secret_key and UID
+	// Response shape: { data: { camera: { uid, camera_id, ... }, secret_key: "..." } }
 	var responseUID string
 	var secretKey string
 	if dataMap != nil {
-		if uid, ok := dataMap["uid"].(string); ok {
-			responseUID = uid
-		}
 		if key, ok := dataMap["secret_key"].(string); ok {
 			secretKey = key
+		}
+		if camera, ok := dataMap["camera"].(map[string]interface{}); ok {
+			if uid, ok := camera["uid"].(string); ok {
+				responseUID = uid
+			}
+			if cid, ok := camera["camera_id"].(string); ok && responseUID == "" {
+				responseUID = cid
+			}
 		}
 	}
 
@@ -1736,6 +1794,8 @@ func (h *DeviceHandler) runCodeRegistration() {
 		return
 	}
 
+	logger.Info("Code registration: platform_url=%s serial=%s", platformBaseURL(), serialNumber)
+
 	client := tls.PlatformHTTPClient(30 * time.Second)
 	retryCount := 0
 	const maxRetryBackoff = 30 // Max backoff seconds
@@ -1764,6 +1824,7 @@ func (h *DeviceHandler) runCodeRegistration() {
 	}
 
 	registerURL := platformURL("/api/v2/camera/register/")
+	logger.Info("Code registration: register_url=%s", registerURL)
 	registered := false
 
 	for !registered {
@@ -1859,6 +1920,7 @@ func (h *DeviceHandler) runCodeRegistration() {
 	defer ticker.Stop()
 
 	statusURL := platformURL(fmt.Sprintf("/api/v1/claim_camera/%s/status", serialNumber))
+	logger.Info("Code registration: status_poll_url=%s", statusURL)
 
 	for {
 		select {
@@ -1926,7 +1988,7 @@ func (h *DeviceHandler) runCodeRegistration() {
 				codeRegMutex.Unlock()
 			}
 
-			logger.Debug("Claim status response: %s", string(statusBody))
+			logger.Info("Claim status response: %s", string(statusBody))
 
 			// Parse response
 			var statusData struct {
@@ -1959,7 +2021,20 @@ func (h *DeviceHandler) runCodeRegistration() {
 					apiKey = statusData.Data.APIKey
 				}
 
-				// Validate that we have an API key before completing registration
+				// If platform didn't return the key (it stops returning it once confirmed),
+				// check if we already have it saved locally from a previous registration.
+				if apiKey == "" {
+					if existing := device.GetPlatformInfo(); existing != "" {
+						var saved map[string]interface{}
+						if err := json.Unmarshal([]byte(existing), &saved); err == nil {
+							if sk, ok := saved["secret_key"].(string); ok && sk != "" {
+								apiKey = sk
+								logger.Info("Using locally saved secret_key (platform omitted it)")
+							}
+						}
+					}
+				}
+
 				if apiKey == "" {
 					logger.Warning("Camera claimed but no API key received yet, continuing to poll...")
 					continue
@@ -1990,6 +2065,7 @@ func (h *DeviceHandler) runCodeRegistration() {
 				// Trigger immediate model download after registration
 				triggerPostRegistrationModelDownload()
 
+				playSuccessSound()
 				h.setCodeRegStatus("claimed", "Camera registered successfully!", registrationData)
 				logger.Info("Code registration completed successfully (already confirmed), tpr_camera_id=%s", statusData.Data.Camera.CameraID)
 				return
@@ -2109,12 +2185,18 @@ func (h *DeviceHandler) runCodeRegistration() {
 				triggerPostRegistrationModelDownload()
 
 				// Success! Return the registration data as result
+				playSuccessSound()
 				h.setCodeRegStatus("claimed", "Camera registered successfully!", registrationData)
 				logger.Info("Code registration completed successfully, tpr_camera_id=%s", statusData.Data.Camera.CameraID)
 				return
 			}
 		}
 	}
+}
+
+// playSuccessSound plays a short success chime on the camera speaker.
+func playSuccessSound() {
+	go exec.Command("aplay", "-D", "hw:1,0", "/usr/share/supervisor/sounds/success.wav").Run()
 }
 
 // updateInternetStatus updates the internet availability status in state.
@@ -2162,6 +2244,116 @@ func triggerPostRegistrationModelDownload() {
 			logger.Warning("Post-registration model download failed: %v", err)
 		}
 	}()
+}
+
+// ============================================================================
+// Non-HTTP Registration Methods (for BLE)
+// ============================================================================
+
+// StartRegistrationDirect starts code registration without HTTP objects.
+// It satisfies the ble.RegistrationService interface.
+func (h *DeviceHandler) StartRegistrationDirect(locationName string, lat, lon float64) (map[string]interface{}, error) {
+	codeRegMutex.Lock()
+
+	// If registration is already in progress, return current status
+	if codeRegState.Status == "generating" || codeRegState.Status == "active" {
+		response := map[string]interface{}{
+			"status":  codeRegState.Status,
+			"message": codeRegState.Message,
+		}
+		if codeRegState.ClaimCode != "" {
+			response["claim_code"] = codeRegState.ClaimCode
+			response["claim_code_formatted"] = formatClaimCode(codeRegState.ClaimCode)
+		}
+		if codeRegState.ExpiresAt != nil {
+			response["expires_at"] = codeRegState.ExpiresAt.Format(time.RFC3339)
+		}
+		if codeRegState.StartedAt != nil {
+			response["started_at"] = codeRegState.StartedAt.Format(time.RFC3339)
+		}
+		codeRegMutex.Unlock()
+		return response, nil
+	}
+
+	// Store request for use in goroutine
+	req := &CodeRegistrationRequest{LocationName: locationName}
+	if lat != 0 {
+		req.Latitude = &lat
+	}
+	if lon != 0 {
+		req.Longitude = &lon
+	}
+	codeRegReq = req
+
+	// Generate registration code
+	code, err := generateRegistrationCode()
+	if err != nil {
+		codeRegMutex.Unlock()
+		return nil, fmt.Errorf("failed to generate registration code: %w", err)
+	}
+
+	// Initialize state
+	now := time.Now()
+	expiresAt := now.Add(codeExpiryMins * time.Minute)
+	codeRegState = &CodeRegistrationState{
+		Status:            "generating",
+		Message:           "Registering code with platform...",
+		ClaimCode:         code,
+		ExpiresAt:         &expiresAt,
+		StartedAt:         &now,
+		InternetAvailable: true,
+		cancel:            make(chan struct{}),
+	}
+
+	// Start registration and polling in background
+	go h.runCodeRegistration()
+	codeRegMutex.Unlock()
+
+	logger.Info("Code registration started (BLE), code: %s, location: %s", formatClaimCode(code), locationName)
+
+	return map[string]interface{}{
+		"status":               "generating",
+		"message":              "Registering code with platform...",
+		"claim_code":           code,
+		"claim_code_formatted": formatClaimCode(code),
+		"expires_at":           expiresAt.Format(time.RFC3339),
+		"started_at":           now.Format(time.RFC3339),
+	}, nil
+}
+
+// GetRegistrationStatusDirect returns code registration status without HTTP objects.
+// It satisfies the ble.RegistrationService interface.
+func (h *DeviceHandler) GetRegistrationStatusDirect() map[string]interface{} {
+	codeRegMutex.Lock()
+	defer codeRegMutex.Unlock()
+
+	response := map[string]interface{}{
+		"status":             codeRegState.Status,
+		"message":            codeRegState.Message,
+		"internet_available": codeRegState.InternetAvailable,
+	}
+
+	if codeRegState.ClaimCode != "" {
+		response["claim_code"] = codeRegState.ClaimCode
+		response["claim_code_formatted"] = formatClaimCode(codeRegState.ClaimCode)
+	}
+	if codeRegState.ExpiresAt != nil {
+		response["expires_at"] = codeRegState.ExpiresAt.Format(time.RFC3339)
+	}
+	if codeRegState.StartedAt != nil {
+		response["started_at"] = codeRegState.StartedAt.Format(time.RFC3339)
+	}
+	if codeRegState.Result != nil {
+		response["result"] = codeRegState.Result
+	}
+	if codeRegState.LastError != "" {
+		response["last_error"] = codeRegState.LastError
+	}
+	if codeRegState.RetryCount > 0 {
+		response["retry_count"] = codeRegState.RetryCount
+	}
+
+	return response
 }
 
 // ============================================================================

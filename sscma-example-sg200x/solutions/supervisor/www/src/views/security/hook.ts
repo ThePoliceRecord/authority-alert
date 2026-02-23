@@ -11,7 +11,7 @@ import {
   delSshKeyApi,
   addSshKeyApi,
 } from "@/api/user";
-import { getPlatformInfoApi, reRegisterCameraApi } from "@/api/device";
+import { getPlatformInfoApi, getPlatformURLApi, reRegisterCameraApi, startCodeRegistrationApi } from "@/api/device";
 import useUserStore from "@/store/user";
 import { supervisorRequest } from "@/utils/request";
 
@@ -67,6 +67,7 @@ interface IInitialState {
   // Platform info
   platformInfo: PlatformInfo | null;
   platformInfoLoading: boolean;
+  platformURL: string;
   reRegisterLoading: boolean;
 }
 type ActionType = { type: "setState"; payload: Partial<IInitialState> };
@@ -82,6 +83,7 @@ const initialState: IInitialState = {
   codeRegLoading: false,
   platformInfo: null,
   platformInfoLoading: false,
+  platformURL: '',
   reRegisterLoading: false,
 };
 function reducer(state: IInitialState, action: ActionType): IInitialState {
@@ -224,12 +226,16 @@ export function useData() {
       if (response.code === 0 && response.data) {
         setStates({ codeRegStatus: response.data });
 
-        // If claimed, show success and stop polling
+        // If claimed, stop polling and refresh platform info.
+        // Only show success toast if we were actively polling (not on initial mount check).
         if (response.data.status === 'claimed') {
-          message.success('Camera registered successfully!');
+          const wasPolling = pollIntervalRef.current !== null;
           stopCodeRegPolling();
-          // Refresh page after a delay
-          setTimeout(() => window.location.reload(), 2000);
+          setStates({ codeRegStatus: null });
+          fetchPlatformInfo();
+          if (wasPolling) {
+            message.success('Camera registered successfully!');
+          }
         }
       }
     } catch (error) {
@@ -289,20 +295,48 @@ export function useData() {
   const handleReRegister = async () => {
     try {
       setStates({ reRegisterLoading: true });
-      const response = await reRegisterCameraApi();
-      if (response.code === 0) {
-        message.success('Re-registration initiated successfully');
-        // Refresh platform info after a delay
-        setTimeout(() => {
-          fetchPlatformInfo();
-        }, 2000);
+
+      // Step 1: Clear existing registration data
+      const clearResponse = await reRegisterCameraApi();
+      if (clearResponse.code !== 0) {
+        message.error(clearResponse.message || 'Failed to clear registration data');
+        setStates({ reRegisterLoading: false });
+        return;
+      }
+
+      // Step 2: Get location name from current platform info or device name
+      const locationName = state.platformInfo?.location_name || deviceInfo?.deviceName || 'Camera';
+
+      // Step 3: Start code registration flow
+      const startResponse = await startCodeRegistrationApi({
+        location_name: locationName,
+      });
+
+      if (startResponse.code === 0 && startResponse.data) {
+        // Update code registration status to show claim code UI
+        setStates({
+          codeRegStatus: {
+            status: startResponse.data.status,
+            message: startResponse.data.message,
+            claim_code: startResponse.data.claim_code,
+            claim_code_formatted: startResponse.data.claim_code_formatted,
+            expires_at: startResponse.data.expires_at,
+            started_at: startResponse.data.started_at,
+          },
+          platformInfo: null, // Clear old platform info
+          reRegisterLoading: false,
+        });
+
+        // Start polling for registration status
+        startCodeRegPolling();
+        message.success('Enter the claim code on your mobile app to complete registration');
       } else {
-        message.error(response.message || 'Failed to re-register camera');
+        message.error(startResponse.message || 'Failed to start code registration');
+        setStates({ reRegisterLoading: false });
       }
     } catch (error) {
       console.error("Failed to re-register camera:", error);
       message.error('Failed to re-register camera');
-    } finally {
       setStates({ reRegisterLoading: false });
     }
   };
@@ -313,6 +347,12 @@ export function useData() {
     fetchCodeRegistrationStatus();
     // Fetch platform info on mount
     fetchPlatformInfo();
+    // Fetch platform URL for claim link
+    getPlatformURLApi().then((res) => {
+      if (res.code === 0 && res.data?.platform_url) {
+        setStates({ platformURL: res.data.platform_url });
+      }
+    }).catch(() => {});
 
     return () => {
       stopCodeRegPolling();

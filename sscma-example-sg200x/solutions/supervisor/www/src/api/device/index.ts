@@ -134,6 +134,60 @@ export const applyUploadedUpdatePackageApi = async () =>
     method: "post",
   });
 
+// Sync browser time to device (unauthenticated, OOBE-only)
+export const syncBrowserTimeApi = async () =>
+  supervisorRequest<{ synced: boolean; reason: string }>({
+    url: "api/deviceMgr/syncBrowserTime",
+    method: "post",
+    data: { timestamp: Math.floor(Date.now() / 1000) },
+  });
+
+// Timezone & time APIs
+export const getTimezoneApi = async () =>
+  supervisorRequest<{ timezone: string }>({
+    url: "api/deviceMgr/getTimezone",
+    method: "get",
+  });
+
+export const setTimezoneApi = async (data: { timezone: string }) =>
+  supervisorRequest<{ timezone: string }>({
+    url: "api/deviceMgr/setTimezone",
+    method: "post",
+    data,
+  });
+
+export const getTimezoneListApi = async () =>
+  supervisorRequest<{ timezones: string[] }>({
+    url: "api/deviceMgr/getTimezoneList",
+    method: "get",
+  });
+
+export const getTimestampApi = async () =>
+  supervisorRequest<{ timestamp: number }>({
+    url: "api/deviceMgr/getTimestamp",
+    method: "get",
+  });
+
+export const setTimestampApi = async (data: { timestamp: number }) =>
+  supervisorRequest<{ timestamp: number }>({
+    url: "api/deviceMgr/setTimestamp",
+    method: "post",
+    data,
+  });
+
+export const getSystemStatusApi = async () =>
+  supervisorRequest<{
+    ntpSynced?: boolean;
+    lastNtpSync?: number | null;
+    uptime?: number;
+    deviceName?: string;
+    osName?: string;
+    osVersion?: string;
+  }>({
+    url: "api/deviceMgr/getSystemStatus",
+    method: "get",
+  });
+
 // 获取设备更新版本信息
 export const getSystemUpdateVesionInfoApi = async (data: {
   url: string;
@@ -208,6 +262,20 @@ export const savePlatformInfoApi = async (data: { platform_info: string }) =>
     data,
   });
 
+// Get/set platform API base URL
+export const getPlatformURLApi = async () =>
+  supervisorRequest<{ platform_url: string }>({
+    url: "api/deviceMgr/getPlatformURL",
+    method: "get",
+  });
+
+export const setPlatformURLApi = async (data: { platform_url: string }) =>
+  supervisorRequest<{ platform_url: string }>({
+    url: "api/deviceMgr/setPlatformURL",
+    method: "post",
+    data,
+  });
+
 // 获取平台信息
 export const getPlatformInfoApi = async () =>
   supervisorRequest<{
@@ -262,7 +330,7 @@ export const setAnalyticsConfigApi = async (data: { enabled: boolean }) =>
     data,
   });
 
-// Camera re-registration
+// Camera re-registration (clears existing registration)
 export const reRegisterCameraApi = async () =>
   supervisorRequest<{
     status: string;
@@ -270,6 +338,25 @@ export const reRegisterCameraApi = async () =>
   }>({
     url: "api/deviceMgr/reRegisterCamera",
     method: "post",
+  });
+
+// Start code-based registration flow
+export const startCodeRegistrationApi = async (data: {
+  location_name: string;
+  latitude?: number;
+  longitude?: number;
+}) =>
+  supervisorRequest<{
+    status: string;
+    message: string;
+    claim_code: string;
+    claim_code_formatted: string;
+    expires_at: string;
+    started_at?: string;
+  }>({
+    url: "api/deviceMgr/startCodeRegistration",
+    method: "post",
+    data,
   });
 
 // Model update status

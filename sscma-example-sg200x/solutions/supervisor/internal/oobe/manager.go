@@ -19,13 +19,14 @@ import (
 )
 
 const (
-	FlagFile         = "/etc/oobe/flag"
-	BinaryPath       = "/usr/local/bin/oobe"
-	ListenAddr       = "127.0.0.1:8081"
-	RootDir          = "/usr/share/oobe/www"
+	FlagFile          = "/etc/oobe/flag"
+	StartedFile       = "/etc/oobe/started"
+	BinaryPath        = "/usr/local/bin/oobe"
+	ListenAddr        = "127.0.0.1:8081"
+	RootDir           = "/usr/share/oobe/www"
 	FlagCheckInterval = 2 * time.Second
-	StartupTimeout   = 10 * time.Second
-	ShutdownTimeout  = 5 * time.Second
+	StartupTimeout    = 10 * time.Second
+	ShutdownTimeout   = 5 * time.Second
 )
 
 // Manager handles OOBE process lifecycle and proxying.
@@ -54,6 +55,23 @@ func (m *Manager) IsActive() bool {
 
 // Start begins OOBE monitoring. Call this on supervisor startup.
 func (m *Manager) Start() error {
+	// If both flag and started files exist, OOBE was interrupted after the
+	// password was changed. Factory reset to return to a clean state.
+	if m.flagExists() {
+		if _, err := os.Stat(StartedFile); err == nil {
+			logger.Info("OOBE was started but never completed — triggering factory reset")
+			if err := exec.Command("fw_setenv", "factory_reset", "1").Run(); err != nil {
+				logger.Error("Failed to set factory_reset env: %v", err)
+				return fmt.Errorf("failed to set factory_reset: %w", err)
+			}
+			if err := exec.Command("reboot").Run(); err != nil {
+				logger.Error("Failed to reboot: %v", err)
+				return fmt.Errorf("failed to reboot: %w", err)
+			}
+			return fmt.Errorf("rebooting for factory reset")
+		}
+	}
+
 	// Check initial state
 	if m.flagExists() {
 		if err := m.startOOBE(); err != nil {
@@ -123,7 +141,8 @@ func (m *Manager) monitorFlagFile() {
 					logger.Error("Failed to start OOBE: %v", err)
 				}
 			} else if !flagExists && wasActive {
-				// Flag removed, stop OOBE
+				// Flag removed (OOBE complete), stop OOBE and clean up marker
+				os.Remove(StartedFile)
 				if err := m.stopOOBE(); err != nil {
 					logger.Error("Failed to stop OOBE: %v", err)
 				}

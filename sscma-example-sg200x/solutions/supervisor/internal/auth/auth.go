@@ -188,6 +188,12 @@ func (am *AuthManager) generateToken(username string) (string, error) {
 	return token.SignedString(am.cfg.JWTSecret)
 }
 
+// GenerateToken issues a JWT for the given username without password verification.
+// This is used by BLE auth during OOBE, where no password exists yet.
+func (am *AuthManager) GenerateToken(username string) (string, error) {
+	return am.generateToken(username)
+}
+
 // ValidateToken validates a JWT token and returns the claims.
 func (am *AuthManager) ValidateToken(tokenString string) (*Claims, error) {
 	// Remove "Bearer " prefix if present

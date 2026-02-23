@@ -3,7 +3,6 @@ package ntp
 
 import (
 	"context"
-	"fmt"
 	"os/exec"
 	"strings"
 	"sync"
@@ -14,9 +13,11 @@ import (
 
 const (
 	InitialDelay         = 3 * time.Second  // Brief wait for network stack
-	NtpdateTimeout       = 30 * time.Second // Per-server timeout
-	RetryInterval        = 10 * time.Second // Retry every 10s until synced
+	NtpdateTimeout       = 5 * time.Second  // Per-server timeout (NTP responds fast when reachable)
 	PeriodicSyncInterval = 30 * time.Minute // Re-check interval after sync
+	maxPeriodicFailures  = 3                // Consecutive periodic failures before reverting synced
+	initialRetryInterval = 3 * time.Second  // Starting retry backoff
+	maxRetryInterval     = 10 * time.Second // Cap for retry backoff
 )
 
 // Manager handles NTP time synchronization.
@@ -83,49 +84,85 @@ func (m *Manager) syncLoop(ctx context.Context) {
 	}
 
 	for {
-		// Try to sync
-		if m.trySync(ctx) {
-			m.mu.Lock()
-			m.synced = true
-			m.lastSync = time.Now()
-			m.mu.Unlock()
-			logger.Info("NTP sync: Time synchronized successfully")
+		// Initial sync: retry with backoff until successful
+		attempt := 0
+		retryInterval := initialRetryInterval
+		for {
+			attempt++
+			logger.Info("NTP sync: Attempt %d, trying %d servers...", attempt, len(m.servers))
 
-			// After success, wait for periodic re-sync
+			if m.trySyncRound(ctx) {
+				m.mu.Lock()
+				m.synced = true
+				m.lastSync = time.Now()
+				m.mu.Unlock()
+				logger.Info("NTP sync: Time synchronized successfully (attempt %d)", attempt)
+				break
+			}
+
+			logger.Warn("NTP sync: Round %d failed (all %d servers), retrying in %v", attempt, len(m.servers), retryInterval)
+
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(retryInterval):
+			}
+
+			// Backoff: 3s → 5s → 8s → 10s (capped)
+			retryInterval = retryInterval * 5 / 3
+			if retryInterval > maxRetryInterval {
+				retryInterval = maxRetryInterval
+			}
+		}
+
+		// Periodic re-sync phase
+		periodicFailures := 0
+		for {
 			select {
 			case <-ctx.Done():
 				return
 			case <-time.After(PeriodicSyncInterval):
-				logger.Info("NTP sync: Periodic re-sync")
 			}
-			continue
-		}
 
-		// Sync failed - retry in 10 seconds
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(RetryInterval):
+			logger.Info("NTP sync: Periodic re-sync")
+			if m.trySyncRound(ctx) {
+				periodicFailures = 0
+				m.mu.Lock()
+				m.lastSync = time.Now()
+				m.mu.Unlock()
+			} else {
+				periodicFailures++
+				logger.Warn("NTP sync: Periodic re-sync failed (%d/%d)", periodicFailures, maxPeriodicFailures)
+				if periodicFailures >= maxPeriodicFailures {
+					m.mu.Lock()
+					m.synced = false
+					m.mu.Unlock()
+					logger.Warn("NTP sync: %d consecutive periodic failures, marking as unsynced", maxPeriodicFailures)
+					break // Fall back to initial retry loop
+				}
+			}
 		}
 	}
 }
 
-// trySync attempts to sync time, returns true on success.
-// We skip HTTPS connectivity checks because TLS fails with wrong system time.
-// Just try ntpdate directly - if network isn't ready, it fails fast and we retry.
-func (m *Manager) trySync(ctx context.Context) bool {
-	return m.doSync() == nil
-}
-
-func (m *Manager) doSync() error {
-	// Stop ntpd to free port 123
+// trySyncRound stops ntpd, tries all servers, then restarts ntpd.
+// Returns true if any server succeeded.
+func (m *Manager) trySyncRound(ctx context.Context) bool {
+	// Stop ntpd once to free port 123
 	exec.Command("/etc/init.d/S49ntp", "stop").Run()
 	time.Sleep(500 * time.Millisecond)
 
-	// Try each server
+	success := false
 	for _, server := range m.servers {
-		ctx, cancel := context.WithTimeout(context.Background(), NtpdateTimeout)
-		cmd := exec.CommandContext(ctx, "/usr/bin/ntpdate", "-u", "-b", server)
+		// Bail early if shutting down
+		select {
+		case <-ctx.Done():
+			return false
+		default:
+		}
+
+		sctx, cancel := context.WithTimeout(ctx, NtpdateTimeout)
+		cmd := exec.CommandContext(sctx, "/usr/bin/ntpdate", "-u", "-b", server)
 		output, err := cmd.CombinedOutput()
 		cancel()
 
@@ -137,14 +174,17 @@ func (m *Manager) doSync() error {
 					logger.Debug("NTP sync: hwclock sync failed: %v", err)
 				}
 			}
-			// Restart ntpd for ongoing drift correction
-			exec.Command("/etc/init.d/S49ntp", "start").Run()
-			return nil
+			success = true
+			break
 		}
 		logger.Debug("NTP sync: Server %s failed: %v", server, err)
 	}
 
-	// Restart ntpd even on failure
-	exec.Command("/etc/init.d/S49ntp", "start").Run()
-	return fmt.Errorf("all NTP servers failed")
+	// Only restart ntpd if not shutting down
+	if ctx.Err() == nil {
+		exec.Command("/etc/init.d/S49ntp", "start").Run()
+	}
+
+	return success
 }
+

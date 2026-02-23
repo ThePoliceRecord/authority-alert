@@ -8,15 +8,15 @@
   </head>
   <body>
     <!-- Loading Overlay -->
-    <div id="loading-overlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-      <div style="background: white; padding: 2rem; border-radius: 0.5rem; text-align: center;">
+    <div id="loading-overlay" class="hidden">
+      <div>
         <div class="spinner"></div>
         <div id="loading-message" class="loading-text">Loading...</div>
       </div>
     </div>
 
     <!-- Error Alert -->
-    <div id="error-alert" class="hidden" style="position: fixed; top: 1rem; left: 50%; transform: translateX(-50%); z-index: 10000; min-width: 300px; max-width: 500px;">
+    <div id="error-alert" class="hidden">
       <div class="alert alert-error">
         <strong>Error:</strong> <span id="error-message"></span>
       </div>
@@ -288,7 +288,7 @@
               <p>3. Select "Enter Code" and type the code above</p>
               <p style="margin-top: 1rem;"><strong>Or</strong> claim from your browser:</p>
             </div>
-            <a href="https://dev.thepolicerecord.com/claim" target="_blank" rel="noopener" class="btn btn-secondary" style="margin-bottom: 1rem;">
+            <a href="https://thepolicerecord.com/claim" target="_blank" rel="noopener" class="btn btn-secondary" style="margin-bottom: 1rem;">
               Open Claim Page ↗
             </a>
             <div class="btn-group" style="margin-top: 1rem;">
@@ -326,26 +326,28 @@
       <!-- Step 6: Completion -->
       <div id="step-6" class="setup-step hidden">
         <div class="card">
-          <h2 class="card-title">Setup Complete!</h2>
-          
-          <div id="completion-message">
-            <p>Your Authority Alert device has been configured successfully.</p>
+          <!-- Phase 1: summary (shown when step loads) -->
+          <div id="completion-summary">
+            <h2 class="card-title">Setup Complete!</h2>
+            <div id="completion-message">
+              <p>Your Authority Alert device has been configured successfully.</p>
+            </div>
+            <h3 style="margin-top: 2rem; margin-bottom: 1rem; font-size: 1.125rem;">Setup Summary</h3>
+            <div id="setup-summary"></div>
+            <div class="btn-group">
+              <button type="button" class="btn btn-success" onclick="oobeApp.handleComplete()">
+                Go to Dashboard →
+              </button>
+            </div>
           </div>
 
-          <h3 style="margin-top: 2rem; margin-bottom: 1rem; font-size: 1.125rem;">Setup Summary</h3>
-          <div id="setup-summary">
-            <!-- Summary will be populated here -->
-          </div>
-
-          <div class="alert alert-info" style="margin-top: 1.5rem;">
-            <strong>Next Steps:</strong><br>
-            You will be redirected to the main interface in a few seconds, or click the button below to continue.
-          </div>
-
-          <div class="btn-group">
-            <button type="button" class="btn btn-success" onclick="oobeApp.handleComplete()">
-              Go to Dashboard →
-            </button>
+          <!-- Phase 2: redirect (hidden until handleComplete runs) -->
+          <div id="completion-redirect" class="hidden">
+            <div class="completion-success-icon">✓</div>
+            <h2 class="card-title">Your device is ready!</h2>
+            <div id="completion-ip-display" class="completion-ip-display"></div>
+            <p id="completion-countdown" class="completion-countdown"></p>
+            <button class="btn btn-success" id="completion-go-btn">Go Now →</button>
           </div>
         </div>
       </div>

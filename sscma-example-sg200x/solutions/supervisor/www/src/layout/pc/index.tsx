@@ -74,7 +74,7 @@ const modalContentStyle = {
 };
 
 const PCLayout: React.FC<Props> = ({ children }) => {
-  const { deviceInfo, updateDeviceInfo } = useConfigStore();
+  const { deviceInfo, updateDeviceInfo, ntpSynced } = useConfigStore();
   const [isEditNameModalOpen, setIsEditNameModalOpen] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -219,9 +219,27 @@ const PCLayout: React.FC<Props> = ({ children }) => {
             })}
           </div>
           
-          {/* Logout Button */}
+          {/* NTP Status + Logout */}
           <div className={`border-t border-white/10 ${sidebarCollapsed ? 'mx-8' : 'mx-16'}`}></div>
           <div className={`py-12 ${sidebarCollapsed ? 'px-8' : 'px-12'}`}>
+            {/* NTP Status Indicator */}
+            <div
+              className={`${sidebarCollapsed ? 'px-12 justify-center' : 'px-20'} py-10 text-13 flex items-center rounded-lg`}
+              title={ntpSynced === null ? "NTP: Unknown" : ntpSynced ? "NTP Synced" : "NTP Not synced"}
+            >
+              <span
+                className="inline-block w-8 h-8 rounded-full flex-shrink-0"
+                style={{
+                  backgroundColor: ntpSynced === null ? '#666' : ntpSynced ? '#52c41a' : '#faad14',
+                }}
+              />
+              {!sidebarCollapsed && (
+                <span className="ml-10 text-platinum/60 whitespace-nowrap">
+                  {ntpSynced === null ? "NTP Unknown" : ntpSynced ? "NTP Synced" : "NTP Not synced"}
+                </span>
+              )}
+            </div>
+            {/* Logout Button */}
             <div
               className={`${sidebarCollapsed ? 'px-12 justify-center' : 'px-20'} py-12 text-15 flex items-center cursor-pointer text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-fast`}
               onClick={handleLogout}

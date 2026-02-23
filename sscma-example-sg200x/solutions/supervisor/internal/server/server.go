@@ -11,6 +11,7 @@ import (
 
 	"supervisor/internal/api"
 	"supervisor/internal/auth"
+	"supervisor/internal/ble"
 	"supervisor/internal/config"
 	"supervisor/internal/handler"
 	"supervisor/internal/middleware"
@@ -33,6 +34,7 @@ type Server struct {
 	tlsManager       *tls.Manager
 	oobeManager      *oobe.Manager
 	ntpManager       *ntp.Manager
+	bleService       *ble.Service
 	serverCtx        context.Context
 	serverCancel     context.CancelFunc
 }
@@ -90,6 +92,13 @@ func (s *Server) Start() error {
 	s.startDetectionWsServer()
 
 	apiMux := s.setupRoutes()
+
+	// Start BLE provisioning service (self-gates on OOBE state).
+	go func() {
+		if err := s.bleService.Start(); err != nil {
+			logger.Warning("BLE service failed to start: %v", err)
+		}
+	}()
 
 	// Create top-level mux that routes WebSocket directly (bypass middleware)
 	rootMux := http.NewServeMux()
@@ -235,6 +244,11 @@ func (s *Server) Stop(ctx context.Context) error {
 		}
 	}
 
+	// Stop BLE service
+	if s.bleService != nil {
+		s.bleService.Stop()
+	}
+
 	// Stop WiFi handler
 	if s.wifiHandler != nil {
 		s.wifiHandler.Stop()
@@ -270,6 +284,7 @@ func (s *Server) setupRoutes() http.Handler {
 	userHandler := handler.NewUserHandler(s.authManager)
 	deviceHandler := handler.NewDeviceHandler(s.ntpManager)
 	s.wifiHandler = handler.NewWiFiHandler()
+	s.bleService = ble.NewService(s.authManager, s.wifiHandler.GetWiFiManager(), deviceHandler)
 	fileHandler := handler.NewFileHandler()
 	ledHandler := handler.NewLEDHandler()
 	s.qrHandler = handler.NewQRHandler()
@@ -282,8 +297,9 @@ func (s *Server) setupRoutes() http.Handler {
 	// Paths that don't require authentication
 	// Only include endpoints needed before login
 	noAuthPaths := map[string]bool{
-		"/api/userMgr/login":             true,
-		"/api/deviceMgr/queryDeviceInfo": true, // Needed before login to get device SN
+		"/api/userMgr/login":                true,
+		"/api/deviceMgr/queryDeviceInfo":    true, // Needed before login to get device SN
+		"/api/deviceMgr/syncBrowserTime":    true, // OOBE: set clock from browser before login
 	}
 
 	// Auth middleware
@@ -321,6 +337,7 @@ func (s *Server) setupRoutes() http.Handler {
 	apiHandler.HandleFunc("/api/deviceMgr/getUploadedUpdatePackage", deviceHandler.GetUploadedUpdatePackage)
 	apiHandler.HandleFunc("/api/deviceMgr/applyUploadedUpdatePackage", deviceHandler.ApplyUploadedUpdatePackage)
 	apiHandler.HandleFunc("/api/deviceMgr/setTimestamp", deviceHandler.SetTimestamp)
+	apiHandler.HandleFunc("/api/deviceMgr/syncBrowserTime", deviceHandler.SyncBrowserTime)
 	apiHandler.HandleFunc("/api/deviceMgr/getTimestamp", deviceHandler.GetTimestamp)
 	apiHandler.HandleFunc("/api/deviceMgr/setTimezone", deviceHandler.SetTimezone)
 	apiHandler.HandleFunc("/api/deviceMgr/getTimezone", deviceHandler.GetTimezone)
@@ -335,6 +352,8 @@ func (s *Server) setupRoutes() http.Handler {
 	apiHandler.HandleFunc("/api/deviceMgr/formatSDCard", deviceHandler.FormatSDCard)
 	apiHandler.HandleFunc("/api/deviceMgr/getPlatformInfo", deviceHandler.GetPlatformInfo)
 	apiHandler.HandleFunc("/api/deviceMgr/savePlatformInfo", deviceHandler.SavePlatformInfo)
+	apiHandler.HandleFunc("/api/deviceMgr/getPlatformURL", deviceHandler.GetPlatformURL)
+	apiHandler.HandleFunc("/api/deviceMgr/setPlatformURL", deviceHandler.SetPlatformURL)
 	apiHandler.HandleFunc("/api/deviceMgr/getAnalyticsConfig", deviceHandler.GetAnalyticsConfig)
 	apiHandler.HandleFunc("/api/deviceMgr/setAnalyticsConfig", deviceHandler.SetAnalyticsConfig)
 	apiHandler.HandleFunc("/api/deviceMgr/reRegisterCamera", deviceHandler.ReRegisterCamera)
@@ -358,6 +377,8 @@ func (s *Server) setupRoutes() http.Handler {
 	apiHandler.HandleFunc("/api/wifiMgr/disconnectWiFi", s.wifiHandler.DisconnectWiFi)
 	apiHandler.HandleFunc("/api/wifiMgr/forgetWiFi", s.wifiHandler.ForgetWiFi)
 	apiHandler.HandleFunc("/api/wifiMgr/switchWiFi", s.wifiHandler.SwitchWiFi)
+	apiHandler.HandleFunc("/api/wifiMgr/getAPConfig", s.wifiHandler.GetAPConfig)
+	apiHandler.HandleFunc("/api/wifiMgr/setAPConfig", s.wifiHandler.SetAPConfig)
 
 	// File management
 	apiHandler.HandleFunc("/api/fileMgr/list", fileHandler.List)
