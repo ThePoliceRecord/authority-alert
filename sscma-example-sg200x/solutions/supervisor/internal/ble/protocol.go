@@ -35,10 +35,16 @@ type Response struct {
 //	Bit 6: 1 = last fragment
 //	Bits 5-0: sequence number (0-63)
 func Fragment(data []byte, mtu int) [][]byte {
-	if mtu < 2 {
-		mtu = 2
+	// ATT notifications have 3 bytes of overhead (opcode + handle).
+	// The max notification value is mtu - 3; our framing header takes 1 more.
+	maxValue := mtu - 3
+	if maxValue >= 512 {
+		maxValue = 509 // avoid 512-byte ATT values (controller firmware bug)
 	}
-	payload := mtu - 1 // 1 byte for header
+	if maxValue < 2 {
+		maxValue = 2
+	}
+	payload := maxValue - 1 // 1 byte for framing header
 
 	if len(data) <= payload {
 		// Single packet: both first and last bits set.

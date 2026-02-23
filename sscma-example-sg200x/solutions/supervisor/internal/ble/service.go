@@ -167,6 +167,9 @@ func (s *Service) Stop() {
 func (s *Service) updateMTU(mtu int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if mtu > 514 {
+		mtu = 514 // avoid 512-byte ATT values (controller firmware bug)
+	}
 	if mtu != s.mtu {
 		logger.Info("BLE: MTU updated %d -> %d", s.mtu, mtu)
 		s.mtu = mtu
@@ -272,6 +275,7 @@ func (s *Service) sendResponse(charIdx int, resp Response) {
 	}
 
 	packets := Fragment(data, mtu)
+	logger.Debug("BLE: char[%d] response %d bytes -> %d fragment(s), MTU %d", charIdx, len(data), len(packets), mtu)
 	for i, pkt := range packets {
 		if i > 0 {
 			time.Sleep(fragmentDelay)
