@@ -18,16 +18,22 @@ type ConfigStoreType = {
   wifiStatus: NetworkStatus | undefined;
   etherStatus: NetworkStatus | undefined;
   systemUpdateState: Partial<SystemUpdateState>;
+  ntpSynced: boolean | null;
+  lastNtpSync: number | null;
   updateDeviceInfo: (deviceInfo: IDeviceInfo) => void;
   updateWifiStatus: (wifiStatus: NetworkStatus) => void;
   updateEtherStatus: (etherStatus: NetworkStatus) => void;
   setSystemUpdateState: (payload: Partial<SystemUpdateState>) => void;
+  setNtpSynced: (synced: boolean) => void;
+  setLastNtpSync: (ts: number | null) => void;
 };
 
 const useConfigStore = create<ConfigStoreType>((set) => ({
   deviceInfo: {},
   wifiStatus: undefined,
   etherStatus: undefined,
+  ntpSynced: null,
+  lastNtpSync: null,
   systemUpdateState: {
     status: UpdateStatus.Check,
     visible: false,
@@ -45,6 +51,8 @@ const useConfigStore = create<ConfigStoreType>((set) => ({
     set((state) => ({
       systemUpdateState: { ...state.systemUpdateState, ...payload },
     })),
+  setNtpSynced: (synced) => set({ ntpSynced: synced }),
+  setLastNtpSync: (ts) => set({ lastNtpSync: ts }),
 }));
 
 export default useConfigStore;

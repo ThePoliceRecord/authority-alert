@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import EditBlackImg from "@/assets/images/svg/editBlack.svg";
 import ArrowImg from "@/assets/images/svg/downArrow.svg";
 import CommonPopup from "@/components/common-popup";
@@ -7,15 +7,15 @@ import {
   PickerValue,
   PickerValueExtend,
 } from "antd-mobile/es/components/picker";
-import { Button, Modal, message, Switch, Input as AntInput } from "antd";
-import { ExclamationCircleOutlined, ReloadOutlined, SyncOutlined, PoweroffOutlined, EditOutlined, CheckOutlined, CloseOutlined } from "@ant-design/icons";
+import { Button, Modal, message, Switch, Input as AntInput, Select } from "antd";
+import { ExclamationCircleOutlined, ReloadOutlined, SyncOutlined, PoweroffOutlined, EditOutlined, CheckOutlined, CloseOutlined, ClockCircleOutlined } from "@ant-design/icons";
 import moment from "moment";
 import { useData } from "./hook";
 import { DeviceChannleMode, UpdateStatus, PowerMode } from "@/enum";
 import { requiredTrimValidate } from "@/utils/validate";
 import { parseUrlParam } from "@/utils";
 import useConfigStore from "@/store/config";
-import { factoryResetApi, setDevicePowerApi, getAnalyticsConfigApi, setAnalyticsConfigApi, reRegisterCameraApi, startCodeRegistrationApi, getPlatformURLApi, setPlatformURLApi } from "@/api/device/index";
+import { factoryResetApi, setDevicePowerApi, getAnalyticsConfigApi, setAnalyticsConfigApi, reRegisterCameraApi, startCodeRegistrationApi, getPlatformURLApi, setPlatformURLApi, getTimezoneApi, setTimezoneApi, getTimezoneListApi, getTimestampApi, setTimestampApi } from "@/api/device/index";
 import { useNavigate } from "react-router-dom";
 
 const channelList = [
@@ -53,7 +53,7 @@ function System() {
     onUpdateCheck,
   } = useData();
 
-  const { systemUpdateState, setSystemUpdateState } = useConfigStore();
+  const { systemUpdateState, setSystemUpdateState, ntpSynced, lastNtpSync } = useConfigStore();
   const navigate = useNavigate();
 
   const [isDashboard, setIsDashboard] = useState(false);
@@ -65,10 +65,126 @@ function System() {
   const [urlDraft, setUrlDraft] = useState("");
   const [urlSaving, setUrlSaving] = useState(false);
 
+  // Date & Time state
+  const [currentTimezone, setCurrentTimezone] = useState("UTC");
+  const [timezoneList, setTimezoneList] = useState<string[]>([]);
+  const [deviceTimestamp, setDeviceTimestamp] = useState<number>(Math.floor(Date.now() / 1000));
+  const [timeSyncing, setTimeSyncing] = useState(false);
+  const [tzChanging, setTzChanging] = useState(false);
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fetchRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     const param = parseUrlParam(window.location.href);
     const dashboard = param.dashboard || param.disablelayout;
     setIsDashboard(dashboard == 1);
+  }, []);
+
+  // Fetch date/time data on mount
+  useEffect(() => {
+    const loadDateTimeData = async () => {
+      try {
+        const [tzRes, tzListRes, tsRes] = await Promise.all([
+          getTimezoneApi(),
+          getTimezoneListApi(),
+          getTimestampApi(),
+        ]);
+        if (tzRes.code === 0) setCurrentTimezone(tzRes.data.timezone);
+        if (tzListRes.code === 0) setTimezoneList(tzListRes.data.timezones);
+        if (tsRes.code === 0) setDeviceTimestamp(tsRes.data.timestamp);
+      } catch (error) {
+        console.error("Failed to load date/time data:", error);
+      }
+    };
+    loadDateTimeData();
+  }, []);
+
+  // Tick device timestamp locally every second
+  useEffect(() => {
+    tickRef.current = setInterval(() => {
+      setDeviceTimestamp((prev) => prev + 1);
+    }, 1000);
+    return () => { if (tickRef.current) clearInterval(tickRef.current); };
+  }, []);
+
+  // Re-fetch actual device timestamp every 60s to stay in sync
+  useEffect(() => {
+    fetchRef.current = setInterval(async () => {
+      try {
+        const res = await getTimestampApi();
+        if (res.code === 0) setDeviceTimestamp(res.data.timestamp);
+      } catch { /* ignore */ }
+    }, 60_000);
+    return () => { if (fetchRef.current) clearInterval(fetchRef.current); };
+  }, []);
+
+  const handleSyncFromBrowser = useCallback(async () => {
+    setTimeSyncing(true);
+    try {
+      const ts = Math.floor(Date.now() / 1000);
+      const res = await setTimestampApi({ timestamp: ts });
+      if (res.code === 0) {
+        setDeviceTimestamp(res.data.timestamp);
+        message.success("Device time synced from browser");
+      } else {
+        message.error("Failed to sync time");
+      }
+    } catch {
+      message.error("Failed to sync time");
+    } finally {
+      setTimeSyncing(false);
+    }
+  }, []);
+
+  const handleTimezoneChange = useCallback(async (tz: string) => {
+    setTzChanging(true);
+    try {
+      const res = await setTimezoneApi({ timezone: tz });
+      if (res.code === 0) {
+        setCurrentTimezone(res.data.timezone);
+        message.success(`Timezone set to ${res.data.timezone}`);
+        // Re-fetch timestamp so display updates with new zone offset
+        const tsRes = await getTimestampApi();
+        if (tsRes.code === 0) setDeviceTimestamp(tsRes.data.timestamp);
+      } else {
+        message.error("Failed to set timezone");
+      }
+    } catch {
+      message.error("Failed to set timezone");
+    } finally {
+      setTzChanging(false);
+    }
+  }, []);
+
+  const formatDeviceTime = useCallback((ts: number, tz: string) => {
+    try {
+      const date = new Date(ts * 1000);
+      return date.toLocaleString("en-US", {
+        timeZone: tz,
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      });
+    } catch {
+      // Fallback if timezone is invalid for the browser
+      return new Date(ts * 1000).toLocaleString("en-US");
+    }
+  }, []);
+
+  const formatTimeAgo = useCallback((unixTs: number) => {
+    const seconds = Math.floor(Date.now() / 1000) - unixTs;
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
   }, []);
 
   // Load analytics config and platform URL on mount
@@ -295,6 +411,66 @@ function System() {
                 </div>
               );
             })}
+          </div>
+
+          <div className="font-bold text-18 mb-14 my-24 text-platinum">Date & Time</div>
+          <div className="px-24 py-24" style={translucentCardStyle}>
+            {/* Current Time */}
+            <div className="flex justify-between items-center pb-20 mb-20 border-b border-white/10">
+              <div className="flex-1 mr-20">
+                <span className="text-platinum/70">Current Time</span>
+                <p className="text-20 text-platinum mt-4 font-mono tabular-nums">
+                  {formatDeviceTime(deviceTimestamp, currentTimezone)}
+                </p>
+              </div>
+              <Button
+                type="primary"
+                icon={<ClockCircleOutlined />}
+                onClick={handleSyncFromBrowser}
+                loading={timeSyncing}
+              >
+                Sync from Browser
+              </Button>
+            </div>
+
+            {/* Timezone */}
+            <div className="flex justify-between items-center pb-20 mb-20 border-b border-white/10">
+              <div className="mr-20">
+                <span className="text-platinum/70">Timezone</span>
+              </div>
+              <Select
+                value={currentTimezone}
+                onChange={handleTimezoneChange}
+                loading={tzChanging}
+                showSearch
+                style={{ width: 260 }}
+                options={timezoneList.map((tz) => ({ label: tz, value: tz }))}
+                filterOption={(input, option) =>
+                  (option?.label as string).toLowerCase().includes(input.toLowerCase())
+                }
+              />
+            </div>
+
+            {/* NTP Status */}
+            <div className="flex justify-between items-center">
+              <div className="flex-1 mr-20">
+                <span className="text-platinum/70">NTP Status</span>
+                {lastNtpSync && (
+                  <p className="text-12 text-platinum/50 mt-4">
+                    Last sync: {formatTimeAgo(lastNtpSync)}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-8">
+                <span
+                  className="inline-block w-8 h-8 rounded-full"
+                  style={{ backgroundColor: ntpSynced ? '#52c41a' : '#faad14' }}
+                />
+                <span className="text-platinum">
+                  {ntpSynced === null ? "Unknown" : ntpSynced ? "Synced" : "Not synced"}
+                </span>
+              </div>
+            </div>
           </div>
 
           <div className="font-bold text-18 mb-14 my-24 text-platinum">Camera Registration</div>

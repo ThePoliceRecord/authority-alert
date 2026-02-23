@@ -537,6 +537,54 @@ body {
   color: var(--white-color);
 }
 
+/* Completion Redirect Screen */
+.completion-success-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  font-size: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+}
+
+.completion-ip-display {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--cta-color);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.completion-ip-label {
+  display: block;
+  color: var(--gray-1);
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.completion-ip-link {
+  color: var(--cobalt-blue);
+  font-size: 1.25rem;
+  font-weight: 600;
+  word-break: break-all;
+  text-decoration: none;
+}
+
+.completion-ip-link:hover {
+  text-decoration: underline;
+}
+
+.completion-countdown {
+  color: var(--gray-1);
+  font-size: 0.875rem;
+  margin: 1rem 0;
+}
+
 /* Progress Bar */
 .progress-bar {
   width: 100%;

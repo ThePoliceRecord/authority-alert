@@ -95,26 +95,19 @@ const modalStyles = {
   },
 };
 
-// Upload modal styles - improved readability with solid light background
-const uploadModalContentStyle = {
-  backgroundColor: '#ffffff',
-  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-  borderRadius: '12px',
-};
-
+// Upload modal styles (matching dark theme)
 const uploadModalStyles = {
-  content: uploadModalContentStyle,
+  content: modalContentStyle,
   header: {
-    backgroundColor: '#ffffff',
-    borderBottom: '1px solid #e0e0e0',
-    color: '#333333',
+    backgroundColor: 'transparent',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
   },
   body: {
-    backgroundColor: '#ffffff',
+    backgroundColor: 'transparent',
   },
   footer: {
-    backgroundColor: '#ffffff',
-    borderTop: '1px solid #e0e0e0',
+    backgroundColor: 'transparent',
+    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
   },
 };
 
@@ -1044,7 +1037,7 @@ const Files = () => {
 
       {/* Upload Files Modal - Improved Readability */}
       <Modal
-        title={<span style={{ color: '#333333', fontWeight: 600, fontSize: 18 }}>Upload Files</span>}
+        title={<span className="text-platinum" style={{ fontWeight: 600, fontSize: 18 }}>Upload Files</span>}
         open={uploadModalVisible}
         onOk={handleUpload}
         onCancel={() => {
@@ -1059,18 +1052,6 @@ const Files = () => {
           style: {
             backgroundColor: '#2328bb',
             borderColor: '#2328bb',
-            fontWeight: 600,
-            fontSize: 15,
-            height: 40,
-            paddingLeft: 24,
-            paddingRight: 24,
-          }
-        }}
-        cancelButtonProps={{
-          style: {
-            fontWeight: 500,
-            fontSize: 15,
-            height: 40,
           }
         }}
       >
@@ -1084,9 +1065,9 @@ const Files = () => {
           <Button
             icon={<UploadOutlined />}
             style={{
-              backgroundColor: '#f5f5f5',
-              borderColor: '#d9d9d9',
-              color: '#333333',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              borderColor: 'rgba(224, 224, 224, 0.3)',
+              color: '#e0e0e0',
               fontWeight: 500,
             }}
           >
@@ -1096,7 +1077,7 @@ const Files = () => {
         {uploadFileList.length > 0 && (
           <div style={{ marginTop: 16 }}>
             <div style={{
-              color: '#666666',
+              color: 'rgba(224, 224, 224, 0.7)',
               fontSize: 13,
               marginBottom: 8,
               fontWeight: 500
@@ -1106,25 +1087,25 @@ const Files = () => {
             <div style={{
               maxHeight: 200,
               overflowY: 'auto',
-              border: '1px solid #e0e0e0',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: 8,
               padding: 8,
-              backgroundColor: '#fafafa',
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
             }}>
               {uploadFileList.map((file, index) => (
                 <div
                   key={file.uid || index}
                   style={{
                     padding: '8px 12px',
-                    borderBottom: index < uploadFileList.length - 1 ? '1px solid #e8e8e8' : 'none',
+                    borderBottom: index < uploadFileList.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
                   }}
                 >
-                  <FileOutlined style={{ color: '#666666', fontSize: 16 }} />
+                  <FileOutlined style={{ color: 'rgba(224, 224, 224, 0.6)', fontSize: 16 }} />
                   <span style={{
-                    color: '#333333',
+                    color: '#e0e0e0',
                     fontSize: 14,
                     flex: 1,
                     overflow: 'hidden',
@@ -1133,7 +1114,7 @@ const Files = () => {
                   }}>
                     {file.name}
                   </span>
-                  <span style={{ color: '#999999', fontSize: 12 }}>
+                  <span style={{ color: 'rgba(224, 224, 224, 0.5)', fontSize: 12 }}>
                     {file.size ? formatFileSize(file.size) : ''}
                   </span>
                 </div>

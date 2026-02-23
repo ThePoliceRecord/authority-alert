@@ -148,6 +148,14 @@ func (h *UserHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// If OOBE is active, mark that setup has started (password changed = point of no return).
+	// If the device reboots before OOBE completes, this marker triggers a factory reset.
+	if _, err := os.Stat("/etc/oobe/flag"); err == nil {
+		if err := os.WriteFile("/etc/oobe/started", []byte{}, 0644); err != nil {
+			logger.Error("Failed to create OOBE started marker: %v", err)
+		}
+	}
+
 	logger.Info("Password updated for user %s", username)
 	api.WriteSuccess(w, map[string]interface{}{"message": "Password updated successfully"})
 }

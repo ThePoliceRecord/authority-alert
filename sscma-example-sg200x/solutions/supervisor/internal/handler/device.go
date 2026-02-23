@@ -2021,7 +2021,20 @@ func (h *DeviceHandler) runCodeRegistration() {
 					apiKey = statusData.Data.APIKey
 				}
 
-				// Validate that we have an API key before completing registration
+				// If platform didn't return the key (it stops returning it once confirmed),
+				// check if we already have it saved locally from a previous registration.
+				if apiKey == "" {
+					if existing := device.GetPlatformInfo(); existing != "" {
+						var saved map[string]interface{}
+						if err := json.Unmarshal([]byte(existing), &saved); err == nil {
+							if sk, ok := saved["secret_key"].(string); ok && sk != "" {
+								apiKey = sk
+								logger.Info("Using locally saved secret_key (platform omitted it)")
+							}
+						}
+					}
+				}
+
 				if apiKey == "" {
 					logger.Warning("Camera claimed but no API key received yet, continuing to poll...")
 					continue
@@ -2052,6 +2065,7 @@ func (h *DeviceHandler) runCodeRegistration() {
 				// Trigger immediate model download after registration
 				triggerPostRegistrationModelDownload()
 
+				playSuccessSound()
 				h.setCodeRegStatus("claimed", "Camera registered successfully!", registrationData)
 				logger.Info("Code registration completed successfully (already confirmed), tpr_camera_id=%s", statusData.Data.Camera.CameraID)
 				return
@@ -2171,12 +2185,18 @@ func (h *DeviceHandler) runCodeRegistration() {
 				triggerPostRegistrationModelDownload()
 
 				// Success! Return the registration data as result
+				playSuccessSound()
 				h.setCodeRegStatus("claimed", "Camera registered successfully!", registrationData)
 				logger.Info("Code registration completed successfully, tpr_camera_id=%s", statusData.Data.Camera.CameraID)
 				return
 			}
 		}
 	}
+}
+
+// playSuccessSound plays a short success chime on the camera speaker.
+func playSuccessSound() {
+	go exec.Command("aplay", "-D", "hw:1,0", "/usr/share/supervisor/sounds/success.wav").Run()
 }
 
 // updateInternetStatus updates the internet availability status in state.
@@ -2224,6 +2244,116 @@ func triggerPostRegistrationModelDownload() {
 			logger.Warning("Post-registration model download failed: %v", err)
 		}
 	}()
+}
+
+// ============================================================================
+// Non-HTTP Registration Methods (for BLE)
+// ============================================================================
+
+// StartRegistrationDirect starts code registration without HTTP objects.
+// It satisfies the ble.RegistrationService interface.
+func (h *DeviceHandler) StartRegistrationDirect(locationName string, lat, lon float64) (map[string]interface{}, error) {
+	codeRegMutex.Lock()
+
+	// If registration is already in progress, return current status
+	if codeRegState.Status == "generating" || codeRegState.Status == "active" {
+		response := map[string]interface{}{
+			"status":  codeRegState.Status,
+			"message": codeRegState.Message,
+		}
+		if codeRegState.ClaimCode != "" {
+			response["claim_code"] = codeRegState.ClaimCode
+			response["claim_code_formatted"] = formatClaimCode(codeRegState.ClaimCode)
+		}
+		if codeRegState.ExpiresAt != nil {
+			response["expires_at"] = codeRegState.ExpiresAt.Format(time.RFC3339)
+		}
+		if codeRegState.StartedAt != nil {
+			response["started_at"] = codeRegState.StartedAt.Format(time.RFC3339)
+		}
+		codeRegMutex.Unlock()
+		return response, nil
+	}
+
+	// Store request for use in goroutine
+	req := &CodeRegistrationRequest{LocationName: locationName}
+	if lat != 0 {
+		req.Latitude = &lat
+	}
+	if lon != 0 {
+		req.Longitude = &lon
+	}
+	codeRegReq = req
+
+	// Generate registration code
+	code, err := generateRegistrationCode()
+	if err != nil {
+		codeRegMutex.Unlock()
+		return nil, fmt.Errorf("failed to generate registration code: %w", err)
+	}
+
+	// Initialize state
+	now := time.Now()
+	expiresAt := now.Add(codeExpiryMins * time.Minute)
+	codeRegState = &CodeRegistrationState{
+		Status:            "generating",
+		Message:           "Registering code with platform...",
+		ClaimCode:         code,
+		ExpiresAt:         &expiresAt,
+		StartedAt:         &now,
+		InternetAvailable: true,
+		cancel:            make(chan struct{}),
+	}
+
+	// Start registration and polling in background
+	go h.runCodeRegistration()
+	codeRegMutex.Unlock()
+
+	logger.Info("Code registration started (BLE), code: %s, location: %s", formatClaimCode(code), locationName)
+
+	return map[string]interface{}{
+		"status":               "generating",
+		"message":              "Registering code with platform...",
+		"claim_code":           code,
+		"claim_code_formatted": formatClaimCode(code),
+		"expires_at":           expiresAt.Format(time.RFC3339),
+		"started_at":           now.Format(time.RFC3339),
+	}, nil
+}
+
+// GetRegistrationStatusDirect returns code registration status without HTTP objects.
+// It satisfies the ble.RegistrationService interface.
+func (h *DeviceHandler) GetRegistrationStatusDirect() map[string]interface{} {
+	codeRegMutex.Lock()
+	defer codeRegMutex.Unlock()
+
+	response := map[string]interface{}{
+		"status":             codeRegState.Status,
+		"message":            codeRegState.Message,
+		"internet_available": codeRegState.InternetAvailable,
+	}
+
+	if codeRegState.ClaimCode != "" {
+		response["claim_code"] = codeRegState.ClaimCode
+		response["claim_code_formatted"] = formatClaimCode(codeRegState.ClaimCode)
+	}
+	if codeRegState.ExpiresAt != nil {
+		response["expires_at"] = codeRegState.ExpiresAt.Format(time.RFC3339)
+	}
+	if codeRegState.StartedAt != nil {
+		response["started_at"] = codeRegState.StartedAt.Format(time.RFC3339)
+	}
+	if codeRegState.Result != nil {
+		response["result"] = codeRegState.Result
+	}
+	if codeRegState.LastError != "" {
+		response["last_error"] = codeRegState.LastError
+	}
+	if codeRegState.RetryCount > 0 {
+		response["retry_count"] = codeRegState.RetryCount
+	}
+
+	return response
 }
 
 // ============================================================================

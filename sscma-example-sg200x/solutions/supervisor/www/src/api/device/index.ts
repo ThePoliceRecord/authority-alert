@@ -142,6 +142,52 @@ export const syncBrowserTimeApi = async () =>
     data: { timestamp: Math.floor(Date.now() / 1000) },
   });
 
+// Timezone & time APIs
+export const getTimezoneApi = async () =>
+  supervisorRequest<{ timezone: string }>({
+    url: "api/deviceMgr/getTimezone",
+    method: "get",
+  });
+
+export const setTimezoneApi = async (data: { timezone: string }) =>
+  supervisorRequest<{ timezone: string }>({
+    url: "api/deviceMgr/setTimezone",
+    method: "post",
+    data,
+  });
+
+export const getTimezoneListApi = async () =>
+  supervisorRequest<{ timezones: string[] }>({
+    url: "api/deviceMgr/getTimezoneList",
+    method: "get",
+  });
+
+export const getTimestampApi = async () =>
+  supervisorRequest<{ timestamp: number }>({
+    url: "api/deviceMgr/getTimestamp",
+    method: "get",
+  });
+
+export const setTimestampApi = async (data: { timestamp: number }) =>
+  supervisorRequest<{ timestamp: number }>({
+    url: "api/deviceMgr/setTimestamp",
+    method: "post",
+    data,
+  });
+
+export const getSystemStatusApi = async () =>
+  supervisorRequest<{
+    ntpSynced?: boolean;
+    lastNtpSync?: number | null;
+    uptime?: number;
+    deviceName?: string;
+    osName?: string;
+    osVersion?: string;
+  }>({
+    url: "api/deviceMgr/getSystemStatus",
+    method: "get",
+  });
+
 // 获取设备更新版本信息
 export const getSystemUpdateVesionInfoApi = async (data: {
   url: string;

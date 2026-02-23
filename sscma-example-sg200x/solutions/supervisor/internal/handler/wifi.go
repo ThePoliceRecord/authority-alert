@@ -106,6 +106,12 @@ func (h *WiFiHandler) initWiFi() {
 	}()
 }
 
+// GetWiFiManager returns the underlying WiFiManager so other subsystems
+// (e.g. BLE provisioning) can share it.
+func (h *WiFiHandler) GetWiFiManager() *network.WiFiManager {
+	return h.wifiMgr
+}
+
 // Stop stops the WiFi monitoring goroutine.
 func (h *WiFiHandler) Stop() {
 	close(h.stopChan)
@@ -551,7 +557,7 @@ func (h *WiFiHandler) ConnectWiFi(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.selected = req.SSID
-	h.failedCnt = 10
+	h.failedCnt = 40
 	h.mu.Unlock()
 
 	// Connect to WiFi using native Go
@@ -560,8 +566,9 @@ func (h *WiFiHandler) ConnectWiFi(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			logger.Error("Failed to connect to WiFi: %v", err)
 		}
-		// Scan after connection attempt
-		time.Sleep(3 * time.Second)
+		// Scan after connection attempt — delay long enough for DHCP retries
+		// to complete before scanNetworks() potentially triggers an active scan
+		time.Sleep(8 * time.Second)
 		h.scanNetworks()
 	}()
 

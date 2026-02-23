@@ -2,7 +2,7 @@ import usehookData from './hook'
 import moment from 'moment'
 
 function Home() {
-	const {timeObj, channels, selectedChannel, switchChannel, connectionState} = usehookData()
+	const {timeObj, channels, selectedChannel, switchChannel, connectionState, playerMode} = usehookData()
 	
 	// Get current channel info
 	const currentChannel = channels.find(ch => ch.id === selectedChannel)
@@ -42,21 +42,38 @@ function Home() {
 			
 			{/* Video Player (Camera Feed) - FIRST under title */}
 			<div className='mb-16 flex justify-center'>
-				<div 
+				<div
 					className='w-full rounded-xl overflow-hidden'
 					style={{
 						backgroundColor: 'rgba(31, 31, 27, 0.9)',
 						boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
 					}}
 				>
-					<video
-						className='w-full'
-						id='player'
-						muted
-						autoPlay
-						playsInline
-						style={{ aspectRatio: '16/9', objectFit: 'contain', background: '#1f1f1b' }}
-					></video>
+					{playerMode === 'mse' && (
+						<video
+							className='w-full'
+							id='player'
+							muted
+							autoPlay
+							playsInline
+							style={{ aspectRatio: '16/9', objectFit: 'contain', background: '#1f1f1b' }}
+						></video>
+					)}
+					{playerMode === 'webcodecs' && (
+						<canvas
+							className='w-full'
+							id='player-canvas'
+							style={{ aspectRatio: '16/9', objectFit: 'contain', background: '#1f1f1b' }}
+						></canvas>
+					)}
+					{playerMode === 'unsupported' && (
+						<div
+							className='w-full flex items-center justify-center text-platinum/60 text-14'
+							style={{ aspectRatio: '16/9', background: '#1f1f1b' }}
+						>
+							Video playback is not supported on this browser
+						</div>
+					)}
 				</div>
 			</div>
 			

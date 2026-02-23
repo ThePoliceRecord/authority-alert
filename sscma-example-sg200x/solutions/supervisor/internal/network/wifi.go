@@ -643,9 +643,17 @@ func (m *WiFiManager) renewDHCP() {
 		time.Sleep(500 * time.Millisecond)
 		status, err := m.GetStatus()
 		if err == nil && status != nil && status.State == "COMPLETED" {
-			// Association complete, now get DHCP lease
-			// Use udhcpc since dhcpcd has issues on some devices
-			exec.Command("udhcpc", "-i", "wlan0", "-n", "-q").Run()
+			// Association complete — try DHCP with retries
+			for attempt := 0; attempt < 3; attempt++ {
+				err := exec.Command("udhcpc", "-i", "wlan0", "-n", "-q").Run()
+				if err == nil {
+					logger.Info("DHCP lease obtained on attempt %d", attempt+1)
+					return
+				}
+				logger.Warning("DHCP attempt %d failed: %v", attempt+1, err)
+				time.Sleep(2 * time.Second)
+			}
+			logger.Error("All DHCP attempts failed")
 			return
 		}
 	}

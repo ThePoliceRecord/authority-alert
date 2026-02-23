@@ -5,7 +5,7 @@ import enUS from "antd-mobile/es/locales/en-US";
 import { createHashRouter, RouterProvider } from "react-router-dom";
 import Routes from "@/router";
 import Login from "@/views/login";
-import { queryDeviceInfoApi } from "@/api/device/index";
+import { queryDeviceInfoApi, getSystemStatusApi } from "@/api/device/index";
 import useUserStore from "@/store/user";
 import useConfigStore from "@/store/config";
 import { Version } from "@/utils";
@@ -38,7 +38,7 @@ const App = () => {
     clearCurrentUserInfo,
   } = useUserStore();
 
-  const { updateDeviceInfo } = useConfigStore();
+  const { updateDeviceInfo, ntpSynced, setNtpSynced, setLastNtpSync } = useConfigStore();
 
   useEffect(() => {
     console.log(`%cVersion: ${Version}`, "font-weight: bold");
@@ -51,12 +51,18 @@ const App = () => {
 
   const initUserData = async () => {
     try {
-      const response = await queryDeviceInfoApi();
+      const [response, statusRes] = await Promise.all([
+        queryDeviceInfoApi(),
+        getSystemStatusApi().catch(() => null),
+      ]);
       const deviceInfo = response.data;
-      // Query device info, get sn
       updateDeviceInfo(deviceInfo);
       const sn = deviceInfo.sn;
       setCurrentSn(sn);
+      if (statusRes?.code === 0) {
+        if (statusRes.data.ntpSynced !== undefined) setNtpSynced(statusRes.data.ntpSynced);
+        if (statusRes.data.lastNtpSync !== undefined) setLastNtpSync(statusRes.data.lastNtpSync);
+      }
     } catch (error) {
       // Don't clear user info, likely service not started timeout
     }
@@ -68,6 +74,22 @@ const App = () => {
       window.location.hash = '/';
     }
   }, [token]);
+
+  // Poll NTP status: every 5s when not synced, every 30s when synced
+  useEffect(() => {
+    if (!token || ntpSynced === null) return;
+    const interval = ntpSynced ? 30_000 : 5_000;
+    const poll = setInterval(async () => {
+      try {
+        const res = await getSystemStatusApi();
+        if (res.code === 0) {
+          if (res.data.ntpSynced !== undefined) setNtpSynced(res.data.ntpSynced);
+          if (res.data.lastNtpSync !== undefined) setLastNtpSync(res.data.lastNtpSync);
+        }
+      } catch { /* ignore */ }
+    }, interval);
+    return () => clearInterval(poll);
+  }, [token, ntpSynced]);
 
   return (
     <ConfigProvider

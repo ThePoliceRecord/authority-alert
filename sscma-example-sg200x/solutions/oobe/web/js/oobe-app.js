@@ -179,6 +179,87 @@ class OOBEApp {
     this.init();
   }
 
+  // Keys and max age for OOBE progress persistence (survives AP reconnects)
+  static OOBE_PROGRESS_KEY = 'oobe_progress';
+  static OOBE_AUTH_KEY = 'oobe_auth_token';
+  static OOBE_PROGRESS_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+  /**
+   * Save OOBE progress to localStorage so we can resume after AP reconnect.
+   */
+  saveProgress(step) {
+    try {
+      const data = {
+        step,
+        timestamp: Date.now(),
+        deviceName: this.setupData.deviceName,
+        timezone: this.setupData.timezone,
+        wifiSSID: this.setupData.wifiSSID
+      };
+      localStorage.setItem(OOBEApp.OOBE_PROGRESS_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.warn('Failed to save OOBE progress:', e);
+    }
+  }
+
+  /**
+   * Load saved OOBE progress from localStorage.
+   * Returns null if missing or stale (>24h).
+   */
+  loadProgress() {
+    try {
+      const raw = localStorage.getItem(OOBEApp.OOBE_PROGRESS_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (Date.now() - data.timestamp > OOBEApp.OOBE_PROGRESS_MAX_AGE_MS) {
+        this.clearProgress();
+        return null;
+      }
+      return data;
+    } catch (e) {
+      console.warn('Failed to load OOBE progress:', e);
+      return null;
+    }
+  }
+
+  /**
+   * Clear saved OOBE progress and auth token from localStorage.
+   */
+  clearProgress() {
+    try {
+      localStorage.removeItem(OOBEApp.OOBE_PROGRESS_KEY);
+      localStorage.removeItem(OOBEApp.OOBE_AUTH_KEY);
+    } catch (e) {
+      console.warn('Failed to clear OOBE progress:', e);
+    }
+  }
+
+  /**
+   * Back up the current auth token to localStorage so it survives AP reconnects.
+   */
+  saveAuthToken() {
+    const token = this.tokenManager.getToken('authToken');
+    if (token) {
+      try {
+        localStorage.setItem(OOBEApp.OOBE_AUTH_KEY, token);
+      } catch (e) {
+        console.warn('Failed to save auth token backup:', e);
+      }
+    }
+  }
+
+  /**
+   * Load the backed-up auth token from localStorage.
+   */
+  loadAuthToken() {
+    try {
+      return localStorage.getItem(OOBEApp.OOBE_AUTH_KEY);
+    } catch (e) {
+      console.warn('Failed to load auth token backup:', e);
+      return null;
+    }
+  }
+
   async init() {
     console.log('Initializing OOBE...');
     this.hideLoading();
@@ -195,24 +276,55 @@ class OOBEApp {
       console.warn('Browser time sync failed (non-fatal):', e.message);
     }
 
+    // Check for saved OOBE progress (e.g. after AP reconnect during WiFi step)
+    const saved = this.loadProgress();
+    if (saved && saved.step >= 3) {
+      console.log('Found saved OOBE progress at step', saved.step);
+
+      // Try to restore auth token — first from sessionStorage, then localStorage backup
+      let token = this.tokenManager.getToken('authToken');
+      if (!token) {
+        token = this.loadAuthToken();
+        if (token) {
+          console.log('Restored auth token from localStorage backup');
+          this.tokenManager.setToken('authToken', token);
+        }
+      }
+
+      if (token) {
+        const result = await this.api.queryUserInfo();
+        if (result.success) {
+          console.log('Saved token is valid, resuming at step', saved.step);
+          // Restore setupData fields from saved progress
+          if (saved.deviceName) this.setupData.deviceName = saved.deviceName;
+          if (saved.timezone) this.setupData.timezone = saved.timezone;
+          if (saved.wifiSSID) this.setupData.wifiSSID = saved.wifiSSID;
+          this.showStep(saved.step);
+          return;
+        }
+        console.log('Saved token is invalid');
+      }
+
+      // Token missing or invalid — skip Welcome, go straight to password
+      console.log('Resuming at password step (token invalid)');
+      this.showStep(2);
+      return;
+    }
+
+    // No saved progress — normal fresh start
     // Check if we have a stored token and validate it
     const storedToken = this.tokenManager.getToken('authToken');
     if (storedToken) {
       console.log('Found stored auth token, validating...');
-      // Try a simple API call to validate the token
       const result = await this.api.queryUserInfo();
       if (result.success) {
         console.log('Stored token is valid');
-        // Token is valid, but for OOBE we still start at step 1
-        // The user can proceed through the flow
       } else if (result.authFailure) {
         console.log('Stored token is invalid, clearing...');
-        // Token is invalid, already cleared by API
       }
     }
-    
+
     // Start at step 1 (Welcome)
-    // We'll login when the user provides the old password in step 2
     this.showStep(1);
   }
 
@@ -807,15 +919,40 @@ class OOBEApp {
     return '📡';                        // Weak
   }
 
-  loadCompletionStep() {
+  async loadCompletionStep() {
     console.log('Loading completion step with data:', this.setupData);
+
+    // Fetch WiFi IP for the redirect screen
+    try {
+      const status = await this.api.getConnectionStatus();
+      if (status.success && status.data?.ip) {
+        this.setupData.wifiIP = status.data.ip;
+      }
+    } catch (e) {
+      console.log('Could not fetch WiFi IP:', e);
+    }
+
+    // Ensure redirect view is hidden and summary is visible
+    document.getElementById('completion-summary').classList.remove('hidden');
+    document.getElementById('completion-redirect').classList.add('hidden');
+
     const summaryEl = document.getElementById('setup-summary');
-    
+
     // Ensure we have values, provide defaults if missing
     const deviceName = this.setupData.deviceName || 'Not set';
     const timezone = this.setupData.timezone || 'Not set';
     const wifiSSID = this.setupData.wifiSSID || 'Not configured';
-    
+    const wifiIP = this.setupData.wifiIP || '';
+
+    let ipRow = '';
+    if (wifiIP) {
+      ipRow = `
+        <div class="device-info-item">
+          <span class="device-info-label">WiFi IP Address:</span>
+          <span class="device-info-value">${this.escapeHtml(wifiIP)}</span>
+        </div>`;
+    }
+
     summaryEl.innerHTML = `
       <div class="device-info">
         <div class="device-info-item">
@@ -829,7 +966,7 @@ class OOBEApp {
         <div class="device-info-item">
           <span class="device-info-label">WiFi Network:</span>
           <span class="device-info-value">${this.escapeHtml(wifiSSID)}</span>
-        </div>
+        </div>${ipRow}
       </div>
     `;
   }
@@ -947,7 +1084,9 @@ class OOBEApp {
     }
     
     console.log('Successfully logged in with new password');
-    
+    this.saveProgress(3);
+    this.saveAuthToken();
+
     // Store password temporarily in a secure way for re-authentication
     // Use a closure to avoid storing in setupData
     const securePassword = newPassword;
@@ -1044,6 +1183,8 @@ class OOBEApp {
     }
 
     this.hideLoading();
+    this.saveProgress(4);
+    this.saveAuthToken();
     this.showStep(4);
   }
 
@@ -1062,6 +1203,8 @@ class OOBEApp {
 
     this.setupData.wifiPassword = password;
 
+    this.saveProgress(4);
+    this.saveAuthToken();
     this.showLoading('Connecting to WiFi...');
 
     const result = await this.api.connectWiFi(
@@ -1081,16 +1224,46 @@ class OOBEApp {
     await this.waitForWiFiConnection(this.setupData.wifiSSID);
   }
 
-  async waitForWiFiConnection(ssid, maxAttempts = 15, intervalMs = 1000) {
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      this.showLoading(`Verifying connection... (${attempt}/${maxAttempts})`);
+  async waitForWiFiConnection(ssid, maxAttempts = 40, intervalMs = 2000) {
+    let consecutiveErrors = 0;
 
-      // Wait before checking (give time for connection to establish)
+    // Initial delay: let wpa_supplicant start association before polling
+    this.showLoading(`Connecting to ${this.escapeHtml(ssid)}...`);
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      // Context-aware status messages based on elapsed time
+      const elapsedSec = 3 + attempt * 2;
+      if (elapsedSec < 15) {
+        this.showLoading(`Connecting to ${this.escapeHtml(ssid)}...`);
+      } else if (elapsedSec < 35) {
+        this.showLoading(`Waiting for IP address...`);
+      } else {
+        this.showLoading(`Still connecting, please wait...`);
+      }
+
       await new Promise(resolve => setTimeout(resolve, intervalMs));
 
-      // Use fast connection status endpoint (no caching, real-time status)
       const result = await this.api.getConnectionStatus();
-      if (result.success && result.data) {
+
+      // Track consecutive API failures
+      if (!result.success) {
+        consecutiveErrors++;
+        console.warn(`[WiFi Check ${attempt}] API error (${consecutiveErrors} consecutive)`);
+        if (consecutiveErrors >= 5) {
+          console.error(`[WiFi] Lost connection to device after ${consecutiveErrors} consecutive API failures`);
+          this.hideLoading();
+          this.showError('Lost connection to device. Please refresh the page and try again.');
+          return;
+        }
+        this.showLoading(`Reconnecting to device...`);
+        continue;
+      }
+
+      // API succeeded — reset error counter
+      consecutiveErrors = 0;
+
+      if (result.data) {
         console.log(`[WiFi Check ${attempt}]`, result.data);
 
         // Check if connected to our network
@@ -1108,7 +1281,7 @@ class OOBEApp {
         }
 
         // status 1 = disconnected, but give more time before failing
-        if (result.data.status === 1 && attempt > 10) {
+        if (result.data.status === 1 && attempt > 25) {
           console.log(`[WiFi] Connection failed for ${ssid} after ${attempt} attempts`);
           this.hideLoading();
           this.showError('WiFi connection failed. Please check the password and try again.');
@@ -1123,6 +1296,8 @@ class OOBEApp {
   }
 
   showWiFiConnectionSuccess(ssid, ipAddress) {
+    this.saveProgress(5);
+
     const listEl = document.getElementById('wifi-list');
     listEl.innerHTML = `
       <div class="wifi-connection-success">
@@ -1404,7 +1579,6 @@ class OOBEApp {
       this.stopCodePolling();
       this.showInternetWarning(false);
       console.log('Code registration completed:', status.result);
-      // Complete OOBE immediately
       this.exitToSupervisorUI();
     } else if (status.status === 'error' || status.status === 'expired') {
       this.stopCodePolling();
@@ -1433,17 +1607,16 @@ class OOBEApp {
    * Registration will continue in background
    */
   exitToSupervisorUI() {
+    this.clearProgress();
     // Stop polling in OOBE (backend continues independently)
     this.stopCodePolling();
 
-    // Complete OOBE (remove flag file)
-    fetch('/oobe/api/complete', { method: 'POST' })
-      .then(() => console.log('OOBE completed, navigating to supervisor UI'))
-      .catch(e => console.warn('Error completing OOBE:', e));
-
-    // Navigate to main supervisor UI
-    // Note: Registration continues in background on the device
-    window.location.href = '/';
+    // Show the completion step with IP + countdown instead of redirecting directly.
+    // This avoids the race where the OOBE proxy hasn't shut down yet and the browser
+    // briefly re-renders step 1.
+    this.showStep(6);
+    // Wait for loadCompletionStep (async) to finish before triggering completion
+    this.loadCompletionStep().then(() => this.handleComplete());
   }
 
   /**
@@ -1602,37 +1775,48 @@ class OOBEApp {
   }
 
   async handleComplete() {
-    this.showLoading('Finalizing setup...');
+    this.clearProgress();
 
-    // Optional: Set LED to indicate completion
-    try {
-      await this.api.setLED('led0', 255, 'heartbeat');
-    } catch (e) {
-      console.log('Could not set LED');
-    }
-
-    // Signal OOBE completion - removes /etc/oobe/flag
+    // Finalize: set LED and signal OOBE completion
+    try { await this.api.setLED('led0', 255, 'heartbeat'); } catch (e) { console.log('Could not set LED'); }
     try {
       await fetch('/oobe/api/complete', { method: 'POST' });
       console.log('OOBE flag removed');
-    } catch (e) {
-      console.error('Error completing OOBE:', e);
+    } catch (e) { console.error('Error completing OOBE:', e); }
+
+    // Switch to redirect view
+    document.getElementById('completion-summary').classList.add('hidden');
+    const redirectEl = document.getElementById('completion-redirect');
+    redirectEl.classList.remove('hidden');
+
+    // Determine redirect target — use WiFi IP if available to bypass OOBE proxy race
+    const ip = this.setupData.wifiIP;
+    const target = ip ? `http://${ip}/` : '/';
+
+    // Show IP address
+    const ipDisplay = document.getElementById('completion-ip-display');
+    if (ip) {
+      ipDisplay.innerHTML = `<span class="completion-ip-label">Access your device at</span>` +
+        `<a href="${target}" class="completion-ip-link">${this.escapeHtml(target)}</a>`;
     }
 
-    this.hideLoading();
+    // Countdown
+    let seconds = 10;
+    const countdownEl = document.getElementById('completion-countdown');
+    countdownEl.textContent = `Redirecting in ${seconds}...`;
+    const timer = setInterval(() => {
+      seconds--;
+      if (seconds <= 0) {
+        clearInterval(timer);
+        window.location.href = target;
+      } else {
+        countdownEl.textContent = `Redirecting in ${seconds}...`;
+      }
+    }, 1000);
 
-    // Show success message
-    document.getElementById('completion-message').innerHTML = `
-      <div class="alert alert-success">
-        <strong>Setup Complete!</strong><br>
-        Your Authority Alert device is ready to use.
-      </div>
-    `;
-
-    // Redirect to main dashboard after a delay
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 2000);
+    // Update Go Now button — clears timer to avoid dangling interval
+    const goBtn = document.getElementById('completion-go-btn');
+    goBtn.onclick = () => { clearInterval(timer); window.location.href = target; };
   }
 
   // UI Helpers

@@ -11,6 +11,7 @@ import (
 
 	"supervisor/internal/api"
 	"supervisor/internal/auth"
+	"supervisor/internal/ble"
 	"supervisor/internal/config"
 	"supervisor/internal/handler"
 	"supervisor/internal/middleware"
@@ -33,6 +34,7 @@ type Server struct {
 	tlsManager       *tls.Manager
 	oobeManager      *oobe.Manager
 	ntpManager       *ntp.Manager
+	bleService       *ble.Service
 	serverCtx        context.Context
 	serverCancel     context.CancelFunc
 }
@@ -90,6 +92,13 @@ func (s *Server) Start() error {
 	s.startDetectionWsServer()
 
 	apiMux := s.setupRoutes()
+
+	// Start BLE provisioning service (self-gates on OOBE state).
+	go func() {
+		if err := s.bleService.Start(); err != nil {
+			logger.Warning("BLE service failed to start: %v", err)
+		}
+	}()
 
 	// Create top-level mux that routes WebSocket directly (bypass middleware)
 	rootMux := http.NewServeMux()
@@ -235,6 +244,11 @@ func (s *Server) Stop(ctx context.Context) error {
 		}
 	}
 
+	// Stop BLE service
+	if s.bleService != nil {
+		s.bleService.Stop()
+	}
+
 	// Stop WiFi handler
 	if s.wifiHandler != nil {
 		s.wifiHandler.Stop()
@@ -270,6 +284,7 @@ func (s *Server) setupRoutes() http.Handler {
 	userHandler := handler.NewUserHandler(s.authManager)
 	deviceHandler := handler.NewDeviceHandler(s.ntpManager)
 	s.wifiHandler = handler.NewWiFiHandler()
+	s.bleService = ble.NewService(s.authManager, s.wifiHandler.GetWiFiManager(), deviceHandler)
 	fileHandler := handler.NewFileHandler()
 	ledHandler := handler.NewLEDHandler()
 	s.qrHandler = handler.NewQRHandler()
