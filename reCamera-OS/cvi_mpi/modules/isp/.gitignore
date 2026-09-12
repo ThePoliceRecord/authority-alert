@@ -14,9 +14,29 @@ tags
 
 cppcheck_output.*
 tmp
-isp_version.h
-cvi_pqtool_json.h
-pqtool_definition.json
 .vscode/
 .vscode/settings.json
+
+# --- authority-alert monorepo additions ---
+# Upstream sophgo/cvi_mpi force-adds these despite the rules above: the ISP
+# algorithms are proprietary and ship as PREBUILT OBJECT FILES with no src/.
+# When the submodules were inlined (6f05a0d9b) the rules above silently ate all
+# 562 of them, so `make` failed with "No rule to make target .../obj/dpcm_api.
+# riscv64-unknown-linux-musl.cv181x.o". Do not remove these negations.
+!algo/ae/obj/
+!algo/ae/obj/**
+!algo/af/obj/
+!algo/af/obj/**
+!algo/awb/obj/
+!algo/awb/obj/**
+!cv180x/isp_algo/obj/
+!cv180x/isp_algo/obj/**
+!cv181x/isp_algo/obj/
+!cv181x/isp_algo/obj/**
+!algo/awb/autotest/misc/*.o
+!common/toolJsonGenerator/pqtool_definition.json
+!cv180x/isp/inc/isp_version.h
+!cv181x/isp/inc/isp_version.h
+!cv180x/isp-daemon2/src/cvi_pqtool_json.h
+!cv181x/isp-daemon2/src/cvi_pqtool_json.h
 

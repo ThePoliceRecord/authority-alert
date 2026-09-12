@@ -25,7 +25,10 @@
 
 # Build output dirs
 /release
-output*/
+# Anchored: an unanchored "output*/" matches ANY nested directory named output,
+# which silently dropped cvi_rtsp's vendored nlohmann_json detail/output/*.hpp
+# (included by json.hpp) when the submodules were inlined in 6f05a0d9b.
+/output*/
 
 # ccache build cache
 .ccache/
