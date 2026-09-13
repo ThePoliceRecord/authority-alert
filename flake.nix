@@ -31,10 +31,12 @@
             
             # Git for version control
             git
-            
+            # Toolchains under reCamera-OS/host-tools are stored via LFS
+            git-lfs
+
             # GitHub CLI (used by nix run .#release for PR/merge workflows)
             gh
-            
+
             # Python for scripts
             pythonEnv
             
@@ -51,6 +53,10 @@
             tree
             jq
             rsync
+
+            # Used by nix run .#flash-recovery
+            unzip
+            util-linux
           ];
 
           shellHook = ''
@@ -75,7 +81,7 @@
             echo "  nix run .#clean           # Remove entire output directory"
             echo "  nix run .#clean-external  # Clean only br2-external packages (force rebuild)"
             echo ""
-            echo "Cut a release (tags all 3 repos using the top version in reCamera-OS/CHANGELOG.md):"
+            echo "Cut a release (tags this repo using the top version in reCamera-OS/CHANGELOG.md):"
             echo "  nix run .#release"
             echo ""
             echo "OTA server workflow:"
@@ -95,11 +101,11 @@
             echo "  cd reCamera-OS && nix develop          # SDK build environment"
             echo "  cd sscma-example-sg200x && nix develop # SSCMA development"
             echo ""
-            echo "Note: Large toolchain files use Git LFS."
+            echo "Note: RISC-V toolchains under reCamera-OS/host-tools use Git LFS."
             echo "  git lfs pull  # Fetch toolchains if needed"
             echo ""
-            echo "Docker build uses official Ubuntu 20.04 environment"
-            echo "and avoids cross-compilation issues."
+            echo "Docker build uses an Ubuntu 24.04 (noble) image and avoids"
+            echo "cross-compilation issues with the host environment."
             echo ""
           '';
         };
@@ -152,13 +158,14 @@
               mkdir -p /work/reCamera-OS/output || true
               chown -R \$HOST_UID:\$HOST_GID /work/reCamera-OS/output || true
               
-              # Run as user
+              # Run as user. \$TARGET is expanded by the host shell (sudo resets the
+              # container environment, so it has to be baked into the command).
               sudo -u \$HOST_UNAME bash -c '
                 set -e
                 git config --global --add safe.directory /work
                 git config --global --add safe.directory /work/reCamera-OS
                 cd /work/reCamera-OS
-                make \$TARGET
+                make $TARGET
               '
               "
             '');
